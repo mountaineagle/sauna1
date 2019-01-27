@@ -1,9 +1,40 @@
 #ifndef _MAIN_PRIV_H_
 #define _MAIN_PRIV_H_
 
+/* global variable */
+
+volatile uint8_t Gv_flagInterrupt50ms_bo;	/* !< variable set in 20ms timer interrupt to indicate 20ms time gap >!*/
+
+uint8_t Gv_flag50ms_bo;			/* !< flag set every 20ms used to increment static timer in function >!*/
+
+uint8_t Gv_Timer8s_u8 = 0u;		/* !< timer used to count 8s period >!*/
+uint8_t Gv_Timer6s_u8 = 0u;		/* !< timer used to count 6s period >!*/
+uint8_t Gv_Timer3s_u8 = 0u;		/* !< timer used to count 3s period >!*/
+uint8_t Gv_Timer2s_u8 = 0u;		/* !< timer used to count 2s period >!*/
+uint8_t Gv_Timer1s_u8 = 0u;		/* !< timer used to count 1s period >!*/
+
+uint8_t Gv_ExtTimer1min_bo;		/* !< fag used to indicate 1min period >!*/
+
+int8_t Gv_ActualTemperature_u8;	/* !< variable stored temperature readed from sensor >!*/
+
+stateLamp_t Gv_LampState_e;
+stateFan_t Gv_FanState_e;
+stateFurnance_t Gv_FurState_e;
+/* global variable - finish block*/
+
 /*----- macro definition --------- */
 #define TRUE 0xFFu
 #define FALSE 0x00u
+
+
+/*RS data code */
+#define RS_LAMP_ON		0x06u
+#define RS_LAMP_OFF		0x07u
+#define RS_FAN_ON		0x06u
+#define RS_FAN_OFF		0x07u
+#define RS_FUR_ON		0x06u
+#define RS_FUR_OFF		0x07u
+
 
 #define TIM_MENU_CHANGE 2000u
 #define CALIBRATION_MAX 10
@@ -21,6 +52,20 @@
 #define DELAY_WARMING_TIME_MIN 0u
 #define DELAY_WARMING_TIME_MAX 7200u
 
+/* value for time event */
+#define TIMER_EVENT_1S 20u	/* !< indicate 1s period >!*/
+#define TIMER_EVENT_2S 40u  /* !< indicate 2s period >!*/
+#define TIMER_EVENT_3S 60u	/* !< indicate 3s period >!*/
+#define TIMER_EVENT_4S 80u	/* !< indicate 4s period >!*/
+#define TIMER_EVENT_5S 100u /* !< indicate 5s period >!*/
+#define TIMER_EVENT_6S 120u	/* !< indicate 6s period >!*/
+#define TIMER_EVENT_8S 160u	/* !< indicate 8s period >!*/
+
+/*fan states */
+#define FAN_IDLE		0u
+#define FAN_OFF			1u
+#define FAN_ON			2u
+#define FAN_ON_EXEC		3u
 
 /* value for led management*/
 #define LED_OFF 0
@@ -34,7 +79,7 @@
 #define POINT_LCD_MARK 0x7Fu
 
 /* value for event_u8 */
-#define SW_OFF_ON 0u
+#define SW_OFF_ON 1u
 #define SW_UP 3u
 #define SW_DOWN 4u
 #define SW_FAST_UP 5u
@@ -45,10 +90,6 @@
 #define SW_FAN 10u
 #define SW_TIMER 11u
 #define SW_MENU 13u
-#define TIMER_EVENT_1S 14u
-#define TIMER_EVENT_6S 15u
-#define TIMER_EVENT_8S 16u
-
 /*-------------------------------*/
 
 #define DISPLSY_SEGMENT_NR 4u  /* used to calculate actual segment nr */
@@ -56,12 +97,12 @@
 #define CHANGE_MENU_SW 1u
 #define CHANGE_MENU_TIM 2u
 
-// sposoby przeliczania danych do wyswietlacza
+/* LED display conversion level */
 #define TEMP_LCD_CONV_LEVEL 0u
 #define TIME_LCD_CONV_LEVEL 1u
 #define CALIB_LCD_CONV_LEVEL 2u
 
-
+/* hidden menu definition */
 #define MAXMEN 45u
 #define MINMEN 40u
 #define MENU_L0_WARM_TIME 40u
@@ -105,17 +146,47 @@ typedef struct {
 } strLedStatus_t;
 
 typedef enum{
-	SM_HIDE_MENU	= 0u,
-	SM_OFF			= 1u,
-	SM_IN			= 2u,
-	SM_FAN_SET		= 3u,
-	SM_LAMP_SET		= 4u,
-	SM_TEMP_SET		= 5u,
-	SM_TIMER_SET	= 6u,
-	SM_FURNANCE_ON  = 7u,
-	SM_FAN_ON       = 8u,
+	SM_HIDE_MENU		= 0u,
+	SM_OFF				= 1u,
+	SM_IN				= 2u,
+	SM_FAN_SET			= 3u,
+	SM_LAMP_SET			= 4u,
+	SM_TEMP_SET			= 5u,
+	SM_TIMER_SET		= 6u,
+	SM_FURNANCE_ON		= 7u,
+	SM_FURNANCE_DELAY	= 8u,
+	SM_FAN_ON			= 9u,
 }stateMachine_t;
 
+typedef enum{
+	LAMP_IDLE			= 0u,
+	LAMP_OFF			= 1u,
+	LAMP_ON1			= 2u,
+	LAMP_ON1_EXEC		= 3u,
+	LAMP_ON2			= 4u,
+	LAMP_ON2_EXEC		= 5u,
+	LAMP_AUTO_ON		= 6u,
+	LAMP_AUTO_ON_EXEC	= 7u,
+}stateLamp_t;
+
+
+typedef enum{
+	FAN_IDLE			= 0u,
+	FAN_OFF				= 1u,
+	FAN_ON1				= 2u,
+	FAN_ON1_EXEC		= 3u,
+	FAN_ON2				= 4u,
+	FAN_ON2_EXEC		= 5u,
+	FAN_AUTO_ON			= 6u,
+	FAN_AUTO_ON_EXEC	= 7u,
+}stateFan_t;
+
+typedef enum{
+	FUR_IDLE			= 0u,
+	FUR_OFF				= 1u,
+	FUR_AUTO_ON			= 2u,
+	FUR_AUTO_ON_EXEC	= 3u,
+}stateFurnance_t;
 
 
 #endif

@@ -386,72 +386,77 @@ void setFurnanceDelay(uint8_t event_u8, strSaunaParam_t * structWorkingValue, ui
 	
 static void TempSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel) 
 {
-		/* temperature changing depends on event*/
-		if(SW_UP == event_u8)
-		{
-			(structWorkingValue->temperatureHot_u8)++;
-		}
-		else if(SW_DOWN == event_u8)
-		{	
-			(structWorkingValue->temperatureHot_u8)--;
-		}
-		else if(SW_FAST_UP == event_u8)
-		{
-			(structWorkingValue->temperatureHot_u8)++;
-		}
-		else if(SW_FAST_DOWN == event_u8)
-		{
-			(structWorkingValue->temperatureHot_u8)--;
-		}
-		else if(SW_VERY_FAST_UP == event_u8)
-		{
-			(structWorkingValue->temperatureHot_u8) += 10;
-		}
-		else if(SW_VERY_FAST_DOWN == event_u8)
-		{
-			(structWorkingValue->temperatureHot_u8) -= 10;
-		}	
-		else if(structWorkingValue->temperatureHot_u8 > structWorkingValue->temperatureHotMax_u8)
-		{
-			structWorkingValue->temperatureHot_u8 = structWorkingValue->temperatureHotMin_u8;
-		}
-		else if(structWorkingValue->temperatureHot_u8 < structWorkingValue->temperatureHotMin_u8)
-		{
-			structWorkingValue->temperatureHot_u8 = structWorkingValue->temperatureHotMax_u8;
-		}	
-		/* return to init state*/
-		else if(TIMER_EVENT_6S == event_u8)
-		{
-			Gv_StateMachine_e = Gv_StateMachinePrevState_e;
-		}
-		/* fill Lcd tab with temperature data*/
-		fillLcdDataTab(TEMP_LCD_CONV_LEVEL,(int16_t)structWorkingValue->temperatureHot_u8, displayOutData_pa);
+	/* temperature changing depends on event*/
+	if(SW_UP == event_u8)
+	{
+		(structWorkingValue->temperatureHot_u8)++;
+	}
+	else if(SW_DOWN == event_u8)
+	{	
+		(structWorkingValue->temperatureHot_u8)--;
+	}
+	else if(SW_FAST_UP == event_u8)
+	{
+		(structWorkingValue->temperatureHot_u8)++;
+	}
+	else if(SW_FAST_DOWN == event_u8)
+	{
+		(structWorkingValue->temperatureHot_u8)--;
+	}
+	else if(SW_VERY_FAST_UP == event_u8)
+	{
+		(structWorkingValue->temperatureHot_u8) += 10;
+	}
+	else if(SW_VERY_FAST_DOWN == event_u8)
+	{
+		(structWorkingValue->temperatureHot_u8) -= 10;
+	}	
+	else if(structWorkingValue->temperatureHot_u8 > structWorkingValue->temperatureHotMax_u8)
+	{
+		structWorkingValue->temperatureHot_u8 = structWorkingValue->temperatureHotMin_u8;
+	}
+	else if(structWorkingValue->temperatureHot_u8 < structWorkingValue->temperatureHotMin_u8)
+	{
+		structWorkingValue->temperatureHot_u8 = structWorkingValue->temperatureHotMax_u8;
+	}	
+	/* return to init state*/
+	else if(TIMER_EVENT_6S == event_u8)
+	{
+		Gv_StateMachine_e = Gv_StateMachinePrevState_e;
+	}
+		
+	/* fill Lcd tab with temperature data*/
+	fillLcdDataTab(TEMP_LCD_CONV_LEVEL,(int16_t)structWorkingValue->temperatureHot_u8, displayOutData_pa);
+		
+	return ;
 }
 
 static void OffStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t* displayOutData_pa)
 {
-		/*initialize variable and set states on entry to this state */
-		if (TRUE == Gv_InitOnEntry_bo)
-		{
-			/* remember value in case of return from other states */
-			Gv_StateMachinePrevState_e = SM_OFF;
+	/*used to count position of sec mark on disply */
+	static uint8_t tickDislplayMark_u8 = 0u; 
+		/* initialize variable and set states on entry to this state */
+	if (TRUE == Gv_InitOnEntry_bo)
+	{
+		/* remember value in case of return from other states */
+		Gv_StateMachinePrevState_e = SM_OFF;
 			
-			/*clear led after return from delay state*/
-			clrL(TEMP);
-			clrL(TIMER_OFF);
-			clrL(TIMER_ON);
-			fanState_pu8 = FAN_OFF;
-			lampState_pu8 = LAMP_OFF;
-			furnanceState_pu8 = FUR_OFF;
+		/*clear led after return from delay state*/
+		clrL(TEMP);
+		clrL(TIMER_OFF);
+		clrL(TIMER_ON);
+		fanState_pu8 = FAN_OFF;
+		lampState_pu8 = LAMP_OFF;
+		furnanceState_pu8 = FUR_OFF;
 			
-			displayOutData_pa[0] = 0;
-			displayOutData_pa[1] = 0;
-			displayOutData_pa[2] = 0;
-			displayOutData_pa[3] = 0;
+		displayOutData_pa[0] = 0;
+		displayOutData_pa[1] = 0;
+		displayOutData_pa[2] = 0;
+		displayOutData_pa[3] = 0;
 			
-			/* clear initOnEntry flag - initialize was done*/
-			Gv_InitOnEntry_bo = FALSE;
-		}
+		/* clear initOnEntry flag - initialize was done*/
+		Gv_InitOnEntry_bo = FALSE;
+	}
 		
 	if (SW_MENU == event_u8)//menu ukryte
 	{
@@ -497,7 +502,7 @@ static void OffStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingVal
 	{
 		if (tickDislplayMark_u8 < DISPLSY_SEGMENT_NR)
 		{
-			tickDislplayMark_u8++;
+			tickDislplayMark_u8 ++ ;
 		}
 		else
 		{
@@ -515,7 +520,7 @@ static void OffStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingVal
 
 static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t* displayOutData_pa)
 {
-	/*used to count position of sec mark on disply */
+	/*used to count position of sec mark on display */
 	static uint8_t tickDislplayMark_u8 = 0u; 
 	
 	/*initialize variable and set states on entry to this state */
@@ -528,16 +533,16 @@ static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValu
 		clrL(TEMP);
 		clrL(TIMER_OFF);
 		clrL(TIMER_ON);
-		fanState_pu8 = FAN_OFF;
-		lampState_pu8 = LAMP_OFF;
-		furnanceState_pu8 = FUR_OFF;
+		Gv_FanState_e = FAN_OFF;
+		Gv_LampState_e = LAMP_OFF;
+		Gv_FurState_e = FUR_OFF;
 		/* clear initOnEntry flag - initialize was done*/
 		Gv_InitOnEntry_bo = FALSE;
 	}
 
 	
 	/* switch between states depending on event*/
-	if (SW_OFF == event_u8)
+	if (SW_OFF_ON == event_u8)
 	{
 		Gv_StateMachine_e = SM_OFF;
 		Gv_InitOnEntry_bo = TRUE;
@@ -554,24 +559,24 @@ static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValu
 	}
 	else if(SW_FAN == event_u8)
 	{
-		if (FAN_ON_EXEC == fanState_pu8)
+		if (FAN_ON_EXEC == Gv_FanState_e)
 		{
-			fanState_pu8 = FAN_OFF;
+			Gv_FanState_e = FAN_OFF;
 		}
-		if (FAN_IDLE == fanState_pu8)
+		if (FAN_IDLE == Gv_FanState_e)
 		{
-			fanState_pu8 = FAN_ON;
+			Gv_FanState_e = FAN_ON;
 		}
 	}
 	else if(SW_LAMP == event_u8)
 	{
-		if (LAMP_ON2_EXEC == lampState_pu8)
+		if (LAMP_ON2_EXEC == Gv_LampState_e)
 		{
-			lampState_pu8 = LAMP_OFF;
+			Gv_LampState_e = LAMP_OFF;
 		}
-		if (LAMP_IDLE == lampState_pu8)
+		if (LAMP_IDLE == Gv_LampState_e)
 		{
-			lampState_pu8 = LAMP_ON2;
+			Gv_LampState_e = LAMP_ON2;
 		}
 	}
 	else if(SW_TIMER == event_u8)
@@ -579,9 +584,14 @@ static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValu
 		Gv_StateMachine_e = SM_TIMER_SET;
 		Gv_InitOnEntry_bo = TRUE; 
 	}
-	else if(TIMER_EVENT_8S == event_u8)
+	else if(TIMER_EVENT_8S == event_u8 && 0u == structWorkingValue->delayWarmingTime_u16)
 	{
 		Gv_StateMachine_e = SM_FURNANCE_ON;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	else if(TIMER_EVENT_8S == event_u8 )
+	{
+		Gv_StateMachine_e = SM_FURNANCE_DELAY;
 		Gv_InitOnEntry_bo = TRUE;
 	}
 	else 
@@ -620,320 +630,645 @@ static void HideMenuStateExecute()
 
 
 
-static void FurnanceOnStateExecute()
+static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa)
+{
+	static uint8_t tickDislplayMark_u8 = 0u;
+	/* initialize variable on entry to state */
+	if (TRUE == Gv_InitOnEntry_bo)
+	{
+		/* remember value in case of return from other states */
+		Gv_StateMachinePrevState_e = SM_FURNANCE_ON
+			
+		/* clear led after return from delay state */
+		Gv_LedStatus.TempLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOffLed_u8 = LED_ON;
+		
+		/* switching on the lamp */
+		Gv_LampState_e = LAMP_AUTO_ON;
+		/* init display position for point */
+		tickDislplayMark_u8 = 0u;
+			
+		/* clear initOnEntry flag - initialize was done */
+		Gv_InitOnEntry_bo = FALSE;
+	}
+	
+	/* switch executing */
+	if (SW_OFF_ON == event_u8)
+	{
+		Gv_StateMachine_e = SM_OFF;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	else if(SW_UP == event_u8)
+	{
+		Gv_StateMachine_e = SM_TEMP_SET;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	else if(SW_DOWN == event_u8)
+	{
+		Gv_StateMachine_e = SM_TEMP_SET;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	else if(SW_FAN == event_u8)
+	{
+		if (FAN_ON_EXEC == Gv_FanState_e)
+		{
+			Gv_FanState_e = FAN_OFF;
+		}
+		if (FAN_IDLE == Gv_FanState_e)
+		{
+			Gv_FanState_e = FAN_ON;
+		}
+	}
+	else if(SW_LAMP == event_u8)
+	{
+		if (LAMP_ON2_EXEC == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_OFF;
+		}
+		if (LAMP_IDLE == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_ON2;
+		}
+	    if (LAMP_ON1_EXEC == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_OFF;
+		}
+	}
+	else if(SW_TIMER == event_u8)
+	{
+		Gv_StateMachine_e = SM_TIMER_SET;
+		Gv_InitOnEntry_bo = TRUE; 
+	}
+	else 
+	{
+		; /* do nothing */
+	}
+	
+	/* count timer */
+	if(TRUE == Gv_ExtTimer1min_bo)
+	{
+		structWorkingValue->warmingTime_u16 -- ; 
+	}
+	
+	if (0u == structWorkingValue->warmingTime_u16)
+	{
+		Gv_StateMachine_e = SM_FAN_ON;
+		Gv_InitOnEntry_bo = TRUE; 
+	}
+	
+	/* fill LCD data tab by temperature hot*/
+	if (TIMER_EVENT_6S > Gv_Timer8s_u8)
+	{
+		fillLcdDataTab(TEMP_LCD_CONV_LEVEL, (int16_t)(structWorkingValue->temperatureHot_u8) , displayOutData_pa);
+	}
+	else 
+	{
+		fillLcdDataTab(TEMP_LCD_CONV_LEVEL, (int16_t)(Gv_ActualTemperature_u8) , displayOutData_pa);
+	}
+	
+	return ;
+	
+}
+
+static void TimeFlagSet()
+{
+	/* clear global flag after one cycle of main function*/
+	if (TRUE == Gv_flag50ms_bo)
+	{
+		Gv_flag50ms_bo = FALSE;
+	}
+	
+	/*clear interrupt flag, set global flag */
+	if (TRUE == Gv_flagInterrupt50ms_bo)
+	{
+		Gv_flagInterrupt50ms_bo = FALSE;
+		Gv_flag50ms_bo = TRUE;
+	}
+	
+	return ;
+}
+
+static void ClearAllTimers()
+{
+	Gv_Timer8s_u8 = 0u;
+	Gv_Timer6s_u8 = 0u;
+	Gv_Timer2s_u8 = 0u;
+	Gv_Timer1s_u8 = 0u;
+}
+
+
+static void TimeCounter()
+{
+	if (TIMER_EVENT_8S == Gv_Timer8s_u8)
+	{
+		Gv_Timer8s_u8 = 0u;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
+	if (TIMER_EVENT_6S == Gv_Timer6s_u8)
+	{
+		Gv_Timer6s_u8 = 0u;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
+	if (TIMER_EVENT_3S == Gv_Timer3s_u8)
+	{
+		Gv_Timer3s_u8 == 0u;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
+	if (TIMER_EVENT_2S == Gv_Timer2s_u8)
+	{
+		Gv_Timer2s_u8 == 0u;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
+	if (TIMER_EVENT_1S == Gv_Timer1s_u8)
+	{
+		Gv_Timer1s_u8 == 0u;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
+	if (TRUE == Gv_flagInterrupt50ms_bo)
+	{
+		Gv_flagInterrupt50ms_bo = FALSE;
+		Gv_Timer8s_u8 ++;
+		Gv_Timer6s_u8 ++;
+		Gv_Timer2s_u8 ++;
+		Gv_Timer1s_u8 ++;
+	}
+}
+
+
+
+
+static void FurnanceDelayStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa)
 {
 	if (TRUE == Gv_InitOnEntry_bo)
 	{
 		/* remember value in case of return from other states */
-		Gv_StateMachinePrevState_e = SM_FURNANCE_ON;
-			
-		/*clear led after return from delay state*/
-		clrL(TEMP);
-		clrL(TIMER_OFF);
-		clrL(TIMER_ON);
-			
-		/* clear initOnEntry flag - initialize was done*/
+		Gv_StateMachinePrevState_e = SM_FURNANCE_DELAY;
+		
+		/* clear led after return from delay state */
+		Gv_LedStatus.TempLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOnLed_u8 = LED_ON;
+		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+		
+		/* clear initOnEntry flag - initialize was done */
 		Gv_InitOnEntry_bo = FALSE;
 	}
 	
+	/* switch executing */
 	if (SW_OFF_ON == event_u8)
 	{
 		Gv_StateMachine_e = SM_OFF;
 		Gv_InitOnEntry_bo = TRUE;
 	}
-}
-
-void TimerSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8)
-{
-	static uint8_t timerMenuLevel_u8 = 0u;
-	
-	if (TRUE == Gv_InitOnEntry_bo)
+	else if(SW_UP == event_u8)
 	{
-		
-		/*clear led after return from delay state*/
-		clrL(TEMP);
-		clrL(TIMER_OFF);
-		clrL(TIMER_ON);
-		
-		/* clear initOnEntry flag - initialize was done*/
-		Gv_InitOnEntry_bo = FALSE;
-	}
-	
-	if (SW_OFF_ON == event_u8)
-	{
-		Gv_StateMachine_e = SM_OFF;
+		Gv_StateMachine_e = SM_TEMP_SET;
 		Gv_InitOnEntry_bo = TRUE;
 	}
-	else if((TIMER_EVENT_6S == event_u8 || (SW_TIMER == event_u8 && 0xFF == timerMenuLevel_u8))
-				&&  SM_IN == Gv_StateMachinePrevState_e)
+	else if(SW_DOWN == event_u8)
 	{
-		Gv_StateMachine_e = SM_IN;
+		Gv_StateMachine_e = SM_TEMP_SET;
 		Gv_InitOnEntry_bo = TRUE;
 	}
-	else if((TIMER_EVENT_6S == event_u8 || (SW_TIMER == event_u8 && 0xFF == menuLevel_u8)) 
-				&&  SM_FURNANCE_ON == Gv_StateMachinePrevState_e)
+	else if(SW_FAN == event_u8)
+	{
+		if (FAN_ON_EXEC == Gv_FanState_e)
+		{
+			Gv_FanState_e = FAN_OFF;
+		}
+		if (FAN_IDLE == Gv_FanState_e)
+		{
+			Gv_FanState_e = FAN_ON;
+		}
+	}
+	else if(SW_LAMP == event_u8)
+	{
+		if (LAMP_ON2_EXEC == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_OFF;
+		}
+		if (LAMP_IDLE == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_ON2;
+		}
+		if (LAMP_ON1_EXEC == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_OFF;
+		}
+	}
+	else if(SW_TIMER == event_u8)
+	{
+		Gv_StateMachine_e = SM_TIMER_SET;
+		Gv_InitOnEntry_bo = TRUE; 
+	}
+	else 
+	{
+		; /* do nothing */
+	}	
+	
+	/* count timer */
+	if(TIMER_EVENT_1S == event_u8)
+	{
+		structWorkingValue->delayWarmingTime_u16 -- ; 
+	}
+	
+	/* switch to next state */
+	if (0u == structWorkingValue->delayWarmingTime_u16 )
 	{
 		Gv_StateMachine_e = SM_FURNANCE_ON;
+		Gv_InitOnEntry_bo = TRUE; 
+	}
+	
+	/* fill LCD data tab by delay timer */
+	fillLcdDataTab(TIME_LCD_CONV_LEVEL, (int16_t)(structWorkingValue->delayWarmingTime_u16) , displayOutData_pa);
+	
+	return ;
+}
+
+
+void TimerSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel2_u8)
+{
+	static uint8_t menuLevel_u8 = 0u;
+	
+	/* initialize variable on entry to state */
+	if (TRUE == Gv_InitOnEntry_bo)
+	{
+		/* clear led after return from delay state */
+		Gv_LedStatus.TempLed_u8 = LED_ON;
+		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+		
+		/* clear initOnEntry flag - initialize was done */
+		Gv_InitOnEntry_bo = FALSE;
+	}
+	
+	/* switch executing */
+	if (SW_OFF_ON == event_u8)
+	{
+		Gv_StateMachine_e = SM_OFF;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	else if((TIMER_EVENT_6S == event_u8 || (SW_TIMER == event_u8 && 0xFF == menuLevel_u8)))
+	{
+		Gv_StateMachine_e = Gv_StateMachinePrevState_e;
 		Gv_InitOnEntry_bo = TRUE;
 	}
 	else if (SW_TIMER == event_u8)
 	{
-		timerMenuLevel_u8 = ~timerMenuLevel_u8;
+		menuLevel_u8 = ~menuLevel_u8;
 	}
 	
-	if (0u == timerMenuLevel_u8)
+	if (0u == menuLevel_u8)
 	{
-		setFurnanceWorkTime(event_u8, &structWorkingValue, displayOutData_pa, menuLevel_u8);
+		setFurnanceWorkTime(event_u8, structWorkingValue, displayOutData_pa, menuLevel_u8);
 		Gv_LedStatus.TimerOffLed_u8 = LED_BLINK;
 	}
 	else
 	{
-		setFurnanceDelay(event_u8, &structWorkingValue, displayOutData_pa, menuLevel_u8);
+		setFurnanceDelay(event_u8, structWorkingValue, displayOutData_pa, menuLevel_u8);
 		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
 		Gv_LedStatus.TimerOnLed_u8 = LED_BLINK;
 	}
 	
-	return;
+	return ;
 }
 
 
-static void FanOnStateExecute();
+static void FanOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel2_u8)
 {
+	if (TRUE == Gv_InitOnEntry_bo)
+	{
+		/* remember value in case of return from other states */
+		Gv_StateMachinePrevState_e = SM_FAN_ON;
+		
+		/* clear led after return from delay state */
+		Gv_LedStatus.TempLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+		Gv_LedStatus.FanLed_u8 = LED_ON;
+		
+		/* switch on the fan */
+		fanState_pu8 = FAN_ON;
+		
+		/* clear initOnEntry flag - initialize was done */
+		Gv_InitOnEntry_bo = FALSE;
+	}
 	
+	/* switch executing */
+	if (SW_OFF_ON == event_u8)
+	{
+		Gv_StateMachine_e = SM_OFF;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	else if(SW_FAN == event_u8)
+	{
+		if (FAN_ON_EXEC == Gv_FanState_e)
+		{
+			Gv_FanState_e = FAN_OFF;
+		}
+		if (FAN_IDLE == Gv_FanState_e)
+		{
+			Gv_FanState_e = FAN_ON;
+		}
+	}
+	else if(SW_LAMP == event_u8)
+	{
+		if (LAMP_ON2_EXEC == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_OFF;
+		}
+		if (LAMP_IDLE == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_ON2;
+		}
+		if (LAMP_ON1_EXEC == Gv_LampState_e)
+		{
+			Gv_LampState_e = LAMP_OFF;
+		}
+	}
+	else
+	{
+		; /* do nothing */
+	}
+	
+	/* count timer */
+	if(TIMER_EVENT_1S == event_u8)
+	{
+		structWorkingValue->timerFanSet_u8 -- ;
+	}
+	/* switching to next state */
+	if (0u == structWorkingValue->timerFanSet_u8 )
+	{
+		Gv_StateMachine_e = SM_OFF;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	
+	/* LED display */
+	/* fill LCD data tab by delay timer */
+	fillLcdDataTab(TEMP_LCD_CONV_LEVEL, (int16_t)(Gv_ActualTemperature_u8) , displayOutData_pa);
+	
+	return ;
 }
 
+
+		//-------------------------obliczenie aktualnej temperatury po otrzymaniu wszystkich cyfr...
+		if (getAllDigit==1){
+			Gv_ActualTemperature_u8=(uint8_t)TabToTempConv(temp100,temp10,temp1);
+			Gv_ActualTemperature_u8=Gv_ActualTemperature_u8+calibration;
+			getAllDigit=0;
+			makeCount=1;
+		}
+		
+static uint8_t SwEventChoose (uint8_t switchCounter_bo)	
+ {     
+	uint8_t swEvent_u8 = 0u;
+	if (TRUE == switchCounter_bo)
+	{
+		switchCounter_bo = FALSE;
+	    if ( SHORT == obslugaPrzyciskuKrotkiego2(0u,PINA,0x01u,15u) )// ON/OFF
+		{
+			swEvent_u8 = SW_OFF_ON; 
+		}
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(1u,PINA,0x02u,15u) )// LAMP<-TEMP
+		{
+			swEvent_u8 = SW_LAMP; 
+		}
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(2u,PINA,0x04u,15u) )// STRZ GORA
+		{
+			swEvent_u8 = SW_UP; 
+		}
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(3u,PINA,0x08u,15u) )// WIATRAK<-TIMER
+		{
+			swEvent_u8 = SW_FAN;
+		}
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(4u,PINA,0x10u,15u) )// MENU<-LAMP2
+		{
+			swEvent_u8 = SW_TIMER;
+		}
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(5u,PINA,0x20u,15u) )// STRZ DOL
+		{
+			swEvent_u8 = SW_DOWN; 
+		}
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego(6u,PINA,0x10u,15u) )// MENU UKRYTE
+		{
+			swEvent_u8 = SW_MENU;
+		}
+	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(7u,PINA,0x04u,150u,100u) )// Menu bardzo szybkie pzewijanie UP
+		{
+			swEvent_u8 = SW_VERY_FAST_UP;
+		}
+	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(8u,PINA,0x04u,150u,100u) )// Menu szybkie pzewijanie UP
+	    {
+		    swEvent_u8 = SW_FAST_UP;
+	    }
+	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(9u,PINA,0x20u,150u,100u) )// Menu bardzo szybkie pzewijanie DOWN
+		{
+			swEvent_u8 = SW_VERY_FAST_DOWN;
+		}
+	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(10u,PINA,0x20u,150u,100u) )// Menu szybkie pzewijanie DOWN
+	    {
+		    swEvent_u8 = SW_FAST_DOWN;
+	    }
+	}
+	return swEvent_u8;
+ }
 
 static void StateMachine(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8)
 {
 	switch(Gv_StateMachine_e)
 	{
 		case SM_HIDE_MENU:
-		HideMenuStateExecute();
-		break;
+			HideMenuStateExecute();
+			break;
 		case SM_OFF:
-		OffStateExecute(event_u8, structWorkingValue, displayOutData_pa);
-		break;
+			OffStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			break;
 		case SM_IN:
-		InStateExecute(event_u8, structWorkingValue, displayOutData_pa);
-		break;
+			InStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			break;
 		case SM_TEMP_SET:
-		TempSetStateExecute(event_u8, structWorkingValue, displayOutData_pa, menuLevel_u8);
-		break;
+			TempSetStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			break;
 		case SM_TIMER_SET:
-		TimerSetStateExecute(event_u8, structWorkingValue, displayOutData_pa, menuLevel_u8);
-		break;
+			TimerSetStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			break;
+		case SM_FURNANCE_DELAY:
+			FurnanceDelayStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			break;
 		case SM_FURNANCE_ON:
-		FurnanceOnStateExecute();
-		break;
+			FurnanceOnStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			break;
 		case SM_FAN_ON:
-		FanOnStateExecute();
-		break;
+			FanOnStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			break;
 
 	}
 }
 
-
-static void FanSet()
+void FurnanceStateMachine(uint8_t* furnanceState_pu8, uint8_t* minMarkFurnance_pu8)
 {
-	static uint8_t fanStatus_u8 = FAN_OFF;
-	if (FAN_ON == fanStatus_u8)
-	{
-		RsDataTab(0x0C, tabDataRS);
-		fanStatus_u8 = FAN_OFF;
-	}
-	else if (FAN_OFF == fanStatus_u8)
-	{
-		RsDataTab(0x0C, tabDataRS);
-		fanStatus_u8 = FAN_ON;
-	}
+	static uint16_t timerFur_u16 = 0u;
 	
-}
-
-static void LampSet()
-{
-	static uint8_t lampStatus_u8 = LAMP_OFF;
-	if (LAMP_ON == fanStatus_u8)
+	if (timerFur_u16 > 0 && *minMarkFurnance_pu8 == 1)
 	{
-		RsDataTab(0x06, tabDataRS);
-		fanStatus_u8 = LAMP_OFF;
+		timerFur_u16 --;
 	}
-	else if (LAMP_OFF == fanStatus_u8)
-	{
-		RsDataTab(0x07, tabDataRS);
-		fanStatus_u8 = LAMP_ON;
-	}
-	
-}
-
-static void FurnanceSet()
-{
-	static uint8_t furnanceStatus_u8 = LAMP_OFF;
-	if (LAMP_ON == fanStatus_u8)
-	{
-		RsDataTab(0x06, tabDataRS);
-		fanStatus_u8 = LAMP_OFF;
-	}
-	else if (LAMP_OFF == fanStatus_u8)
-	{
-		RsDataTab(0x07, tabDataRS);
-		fanStatus_u8 = LAMP_ON;
-	}
-	
-}
-
-
-
-void FurnanceStateMachine(uint8_t* furnanceState_pu8, uint8_t* secondTickFurnance_pu8)
-{
-	static uint16_t timerFan_u16 = 0;
-	
-	if (timerFan_u16 > 0 && *secondTickFurnance_pu8 == 1)
-	{
-		timerFan_u16 --;
-	}
-	
-	
+		
 	switch (*furnanceState_pu8)
 	{
-		case 0://stan IDLE
+		case FUR_IDLE: /* IDLE state */
 		
 		break;
-		case 1://wlaczenie z automatu init
-			RsDataTab(0x0B, tabDataRS);//?????
-			timerFan_u16=Gv_WorkingParam.warmingTime_u16;
+		case FUR_AUTO_ON: /* switch on the furnance */
+			RsDataTab(RS_FUR_ON, tabDataRS);
+			timerFur_u16 = Gv_WorkingParam.warmingTime_u16;
 			setL(TEMP);
-			*furnanceState_pu8=2;
+			*furnanceState_pu8 = FUR_AUTO_ON_EXEC;
 		break;
-		case 2: //praca z automatu
-			if(timerFan_u16==0) //jesli timer dojdzie do zera to wiatrak sie wylacza
+		case FUR_AUTO_ON_EXEC: /* automatic working of the furnance */
+			if(0u == timerFur_u16) /* if timer reach 0 then furnance state change for OFF */
 			{
-				*furnanceState_pu8=3;
+				*furnanceState_pu8 = FUR_OFF;
 			}
 		break;
-		case 3://wylaczenie pieca automat
-			RsDataTab(0x0C, tabDataRS);//?????
+		case FUR_OFF: /* switching off the furnance */
+			RsDataTab(RS_FUR_OFF, tabDataRS);
 			clrL(TEMP);
-			*furnanceState_pu8=0;
+			*furnanceState_pu8 = FUR_IDLE;
 		break;
 
 	}
 	
-	*secondTickFurnance_pu8=0;
 }
 
-void FanStateMachine(uint8_t* fanState_pu8, uint8_t* secondTickFan_pu8)
+void FanStateMachine(uint8_t* fanState_pu8, uint8_t* minMarkFan_pu8)
 {
-	static uint16_t timerFan_u16 = 0;
+	static uint16_t timerFan_u16 = 0u;
 		
-	if (timerFan_u16 > 0 && *secondTickFan_pu8 == 1)
+	if (timerFan_u16 > 0u && *minMarkFan_pu8 == 1)
 	{
 		timerFan_u16 --;		
 	}
-	
-	
+
 	switch (*fanState_pu8)
 	{
-		case OUT_IDLE_STATE://stan IDLE
+		case FAN_IDLE: /* IDLE state */
 		
 		break;
-		case OUT_ON1_STATE://wlaczenie z przycisku w stanie off 
-			RsDataTab(0x0B, tabDataRS);//?????
-			timerFan_u16=Gv_WorkingParam.delayWarmingTime_u16;
-			*fanState_pu8=OUT_WORK1_STATE;
+		case FAN_ON1: /* switching on fan in state off */
+			RsDataTab(RS_FAN_ON, tabDataRS);
+			timerFan_u16 = Gv_WorkingParam.delayWarmingTime_u16;
+			*fanState_pu8 = FAN_ON1_EXEC;
 		break;
-		case OUT_ON2_STATE://wlaczenie z przycisku w stanie innym niz off 
-			RsDataTab(0x0B, tabDataRS);//?????
-			timerFan_u16=Gv_WorkingParam.timerFanSet_u8;
-			*fanState_pu8=OUT_WORK1_STATE;
+		case FAN_ON2: /* switching on fan in state differ than off */
+			RsDataTab(RS_FAN_ON, tabDataRS);
+			timerFan_u16 = Gv_WorkingParam.timerFanSet_u8;
+			*fanState_pu8 = FAN_ON1_EXEC;
 		break;
-		case OUT_WORK1_STATE://praca z przycisku 
-			BlinkLed(FAN, counterL,500);
+		case FAN_ON1_EXEC:/* executing of working lamp after switch on */
+			BlinkLed(FAN, counterL,500u);
 			
-			if(timerFan_u16==0) //jesli timer dojdzie do zera to wiatrak sie wylacza
+			if(timerFan_u16==0) /* if counter == 0u then fan is switching off */
 			{
-				*fanState_pu8=5;
+				*fanState_pu8 = FAN_OFF;
 			}
 		break;
-		case OUT_ON3_STATE://wlaczenie z automatu init 
-			RsDataTab(0x0B, tabDataRS);//?????
-			timerFan_u16=Gv_WorkingParam.timerFanSet_u8;
+		case FAN_AUTO_ON: /* automatic work start */
+			RsDataTab(RS_FAN_ON, tabDataRS);
+			timerFan_u16 = Gv_WorkingParam.timerFanSet_u8;
 			setL(FAN);
-			*fanState_pu8=OUT_WORK3_STATE;
+			*fanState_pu8 = FAN_AUTO_ON_EXEC;
 		break;
-		case OUT_WORK3_STATE: //praca z automatu
-			if(timerFan_u16==0) //jesli timer dojdzie do zera to wiatrak sie wylacza
+		case FAN_AUTO_ON_EXEC: /* automatic work execute */
+			if(0u == timerFan_u16) /* if counter == 0u then fan is switching off */
 			{
-				*fanState_pu8=5;
+				*fanState_pu8 = FAN_OFF;
 			}
 		break;
-		case OUT_OFF_STATE://wylaczenie wiatraka init
-			RsDataTab(0x0C, tabDataRS);//?????
+		case FAN_OFF: /* switch off the fan */
+			RsDataTab(RS_FAN_OFF, tabDataRS);
 			clrL(FAN);
-			*fanState_pu8=0;
+			*fanState_pu8 = FAN_IDLE;
 		break;
 
 	}
-	
-	*secondTickFan_pu8=0;
+
 }
 
-void LampStateMachine(uint8_t* lampState_pu8, uint8_t* secondTickLamp_pu8)
+void LampStateMachine(uint8_t* lampState_pu8, uint8_t* minMarkLamp_pu8)
 {
-	static uint16_t timerLamp_u16=0;
+	static uint16_t timerLamp_u16 = 0u;
 	
-	if (timerLamp_u16>0 && *secondTickLamp_pu8==1)
+	if (timerLamp_u16 > 0 && 1u == *minMarkLamp_pu8)
 	{
 		timerLamp_u16--;
 	}
-	
-	
+		
 	switch (*lampState_pu8)
 	{
-		case 0://stan IDLE
+		case LAMP_IDLE: /* IDLE state */
 		
 		break;
-		case 1://wlaczenie z przycisku init w stanie off
-		RsDataTab(0x0B, tabDataRS);//?????
-		timerLamp_u16=Gv_WorkingParam.delayWarmingTime_u16;
-		*lampState_pu8=3;
+		case LAMP_ON1: /* switching on in state off */
+			RsDataTab(RS_LAMP_ON, tabDataRS);
+			timerLamp_u16 = Gv_WorkingParam.delayWarmingTime_u16;
+			*lampState_pu8 = LAMP_ON1_EXEC;
 		break;
-		case 2://wlaczenie z przycisku  w stanie innym niz off
-		RsDataTab(0x0B, tabDataRS);//?????
-		*lampState_pu8=4;
-		break;
-		case 3://praca z przycisku w stanie off
-		BlinkLed(PROG, counterL,500);
+		case LAMP_ON1_EXEC:/* executing of working lamp in state off */
+			BlinkLed(PROG, counterL,500u);
 		
-		if(timerLamp_u16==0) //jesli timer dojdzie do zera to lampa sie wylacza
-		{
-			*lampState_pu8=5;
-		}
+			if(timerLamp_u16 == 0u) /* if counter == 0u then lamp is switching off */
+			{
+				*lampState_pu8 = LAMP_OFF;
+			}
 		break;
-		case 4://praca z przycisku w stanie innym niz off
-		BlinkLed(PROG, counterL,500);
+		case LAMP_ON2: /* switching on lamp in state differ than off */
+			RsDataTab(RS_LAMP_ON, tabDataRS);
+			*lampState_pu8 = LAMP_ON2_EXEC;
 		break;
-		case 3://wlaczenie z automatu init
-		RsDataTab(0x0B, tabDataRS);//?????
-		//timerLamp=structWorkingValue.timerFanSet;
-		setL(PROG);
-		*lampState_pu8=4;
+		case LAMP_ON2_EXEC: /* working lamp in state differ than off */
+			BlinkLed(PROG, counterL,500u);
 		break;
-		case OUT_WORK2_STATE: //praca z automatu
+		case LAMP_AUTO_ON: /* automatic work start */
+			RsDataTab(RS_LAMP_ON, tabDataRS);
+			//timerLamp=structWorkingValue.timerFanSet;
+			setL(PROG);
+			*lampState_pu8 = LAMP_AUTO_ON_EXEC;
+		break;
+		case LAMP_AUTO_ON_EXEC: /* automatic work execute */
 /*
 		if(timerFan==0) //jesli timer dojdzie do zera to wiatrak sie wylacza
 		{
 			*fanState=5;
 		}*/
 		break;
-		case OUT_OFF_STATE://wylaczenie lampy init
-		RsDataTab(0x0C, tabDataRS);//?????
-		clrL(PROG);
-		*lampState_pu8=0;
+		case LAMP_OFF: /* switching off the lamp */
+			RsDataTab(RS_LAMP_OFF, tabDataRS);
+			clrL(PROG);
+			*lampState_pu8 = LAMP_IDLE;
 		break;
 
 	}
-	
-	*secondTickFan=0;
 }
 
 static void LedWorkStatus()
@@ -941,7 +1276,7 @@ static void LedWorkStatus()
 	
 	if (LED_BLINK == Gv_LedStatus.ProgLed_u8)
 	{
-		BlinkLed(PROG, counterL,500);
+		BlinkLed(PROG, counterL,500u);
 	}
 	else if(LED_ON == Gv_LedStatus.ProgLed_u8)
 	{
@@ -954,7 +1289,7 @@ static void LedWorkStatus()
 
 	if (LED_BLINK == Gv_LedStatus.FanLed_u8)
 	{
-		BlinkLed(FAN, counterL,500);
+		BlinkLed(FAN, counterL,500u);
 	}
 	else if(LED_ON == Gv_LedStatus.FanLed_u8)
 	{
@@ -1004,22 +1339,6 @@ static void LedWorkStatus()
 		clrL(TEMP);
 	}
 	
-}
-
-
-static void LampWorkExecute(uint8_t event_u8)
-{
-	static uint8_t lampState_bo = (uint8_t)FALSE;
-	
-	if ( SW_LAMP == event_u8)
-	{
-		lampState_bo = ~lampState_bo;
-	}
-	
-	if (TRUE == lampState_bo )
-	{
-		
-	}
 }
 
 	menuItem_t tabHideMenu[13]={
