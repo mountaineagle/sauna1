@@ -145,10 +145,10 @@ void saveDefaultParameter(strSaunaParam_t*structDefParameter,strSaunaParam_t*str
 
 void initEepromStruct(strSaunaParam_t*structDefParameter,strSaunaParam_t*structEepromParam, uint8_t* eAddr)
 {
-	if ((eeprom_read_byte(eAddr))==0xFF)
+	if ((eeprom_read_byte(eAddr))==0xFFu)
 	{
 		saveDefaultParameter(structDefParameter,structEepromParam);	
-		eeprom_write_byte(eAddr,0);
+		eeprom_write_byte(eAddr,0u);
 	}
 }
 
@@ -322,15 +322,15 @@ void setFurnanceWorkTime(uint8_t event_u8, strSaunaParam_t * structWorkingValue,
 		}
 		else if(SW_FAST_DOWN == event_u8)
 		{
-			(structWorkingValue->warmingTime_u16) -= 10;
+			(structWorkingValue->warmingTime_u16) -= 10u;
 		}
 		else if(SW_VERY_FAST_UP == event_u8)
 		{
-			(structWorkingValue->warmingTime_u16) += 60;
+			(structWorkingValue->warmingTime_u16) += 60u;
 		}
 		else if(SW_VERY_FAST_DOWN == event_u8 )
 		{
-			(structWorkingValue->warmingTime_u16) -= 60;
+			(structWorkingValue->warmingTime_u16) -= 60u;
 		}
 		
 		if(structWorkingValue->warmingTime_u16 > structWorkingValue->warmingTimeMax_u16)
@@ -357,19 +357,19 @@ void setFurnanceDelay(uint8_t event_u8, strSaunaParam_t * structWorkingValue, ui
 		}
 		else if(SW_FAST_UP == event_u8)
 		{
-			(structWorkingValue->delayWarmingTime_u16)+=10;
+			(structWorkingValue->delayWarmingTime_u16)+=10u;
 		}
 		else if(SW_FAST_DOWN == event_u8)
 		{
-			(structWorkingValue->delayWarmingTime_u16)-=10;
+			(structWorkingValue->delayWarmingTime_u16)-=10u;
 		}
 		else if(SW_VERY_FAST_UP == event_u8)
 		{
-			(structWorkingValue->delayWarmingTime_u16)+=60;
+			(structWorkingValue->delayWarmingTime_u16)+=60u;
 		}
 		else if(SW_VERY_FAST_DOWN == event_u8)
 		{
-			(structWorkingValue->delayWarmingTime_u16)-=60;
+			(structWorkingValue->delayWarmingTime_u16)-=60u;
 		}
 		
 		if(structWorkingValue->delayWarmingTime_u16 > DELAY_WARMING_TIME_MAX)
@@ -442,17 +442,21 @@ static void OffStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingVal
 		Gv_StateMachinePrevState_e = SM_OFF;
 			
 		/*clear led after return from delay state*/
-		clrL(TEMP);
-		clrL(TIMER_OFF);
-		clrL(TIMER_ON);
-		fanState_pu8 = FAN_OFF;
-		lampState_pu8 = LAMP_OFF;
-		furnanceState_pu8 = FUR_OFF;
+		Gv_LedStatus.TempLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+		
+		Gv_FanState_e = FAN_OFF;
+		Gv_LampState_e = LAMP_OFF;
+		Gv_FurState_e = FUR_OFF;
 			
 		displayOutData_pa[0] = 0;
 		displayOutData_pa[1] = 0;
 		displayOutData_pa[2] = 0;
 		displayOutData_pa[3] = 0;
+		
+		/*sent Off infrmation by RS485*/
+		OnOffRSinfoSend(FALSE);
 			
 		/* clear initOnEntry flag - initialize was done*/
 		Gv_InitOnEntry_bo = FALSE;
@@ -465,30 +469,31 @@ static void OffStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingVal
 	}
 	else if (SW_OFF_ON == event_u8)
 	{
-		
+		/*sent Off infrmation by RS485*/
+		OnOffRSinfoSend(TRUE);
 		Gv_StateMachine_e = SM_IN;
 		Gv_InitOnEntry_bo = TRUE;
 	}
 	else if(SW_FAN == event_u8)
 	{
-		if (FAN_ON_EXEC == fanState_pu8)
+		if (FAN_ON_EXEC == Gv_FanState_e)
 		{
-			fanState_pu8 = FAN_OFF;
+			Gv_FanState_e = FAN_OFF;
 		}
-		if (FAN_IDLE == fanState_pu8)
+		if (FAN_IDLE == Gv_FanState_e)
 		{
-			fanState_pu8 = FAN_ON;
+			Gv_FanState_e = FAN_ON;
 		}
 	}
 	else if(SW_LAMP == event_u8)
 	{
-		if (LAMP_ON2_EXEC == lampState_pu8)
+		if (LAMP_ON2_EXEC == Gv_LampState_e)
 		{
-			lampState_pu8 = LAMP_OFF;
+			Gv_LampState_e = LAMP_OFF;
 		}
-		if (LAMP_IDLE == lampState_pu8)
+		if (LAMP_IDLE == Gv_LampState_e)
 		{
-			lampState_pu8 = LAMP_ON2;
+			Gv_LampState_e = LAMP_ON2;
 		}
 	}
 	else 
@@ -518,7 +523,7 @@ static void OffStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingVal
 
 
 
-static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t* displayOutData_pa)
+static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, processedDataInRS_t *processedRSInData, uint8_t* displayOutData_pa)
 {
 	/*used to count position of sec mark on display */
 	static uint8_t tickDislplayMark_u8 = 0u; 
@@ -530,9 +535,10 @@ static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValu
 		Gv_StateMachinePrevState_e = SM_IN;	
 		
 		/*clear led after return from delay state*/
-		clrL(TEMP);
-		clrL(TIMER_OFF);
-		clrL(TIMER_ON);
+		Gv_LedStatus.TempLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+
 		Gv_FanState_e = FAN_OFF;
 		Gv_LampState_e = LAMP_OFF;
 		Gv_FurState_e = FUR_OFF;
@@ -541,8 +547,14 @@ static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValu
 	}
 
 	
+	if (	TRUE == processedRSInData->dataInRS.Error1Sen_bo
+		||	TRUE == processedRSInData->dataInRS.Error2Sen_bo)
+	{
+		Gv_StateMachine_e = SM_ERROR;
+		Gv_InitOnEntry_bo = TRUE;
+	}
 	/* switch between states depending on event*/
-	if (SW_OFF_ON == event_u8)
+	else if (SW_OFF_ON == event_u8)
 	{
 		Gv_StateMachine_e = SM_OFF;
 		Gv_InitOnEntry_bo = TRUE;
@@ -616,21 +628,79 @@ static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValu
 	}	
 	
 	/* add point mark on LCD display every second*/
-	displayOutData_pa[tickDislplayMark_u8] = displayOutData_pa[tickDislplayMark_u8] & POINT_LCD_MARK;
+	displayOutData_pa[tickDislplayMark_u8] = displayOutData_pa[tickDislplayMark_u8] & (uint8_t)MPOINT;
 	
 	return ;
 	
 }
 
 
-static void HideMenuStateExecute()
-{
+static void HideMenuStateExecute(uint8_t event_u8, strSaunaParam_t *structWorkingValue, uint8_t* displayOutData_pa)
+{	
+	static uint8_t currentMenuState_u8 = 0;
+	menuItem_t tabHideMenu[13]={
+		//{{SW_UP, SW_DOWN, SW_CHANGE, TIME_CHANGE, IDLE}, pointerToFunction}
+		{{0,0,1,0,0}, voidFunction(event_u8,structWorkingValue, displayOutData_pa, 0)},
+		{{1,1,3,2,1}, showHideMenuLevel(event_u8,structWorkingValue, displayOutData_pa, 1)},
+		{{2,2,3,2,2}, setMaxWorkingTimerFunction(event_u8,structWorkingValue, displayOutData_pa, 2)},
+		{{3,3,5,4,3}, showHideMenuLevel(event_u8,structWorkingValue, displayOutData_pa, 3)},
+		{{4,4,5,4,4}, setTempMaxFunction(event_u8,structWorkingValue, displayOutData_pa, 4)},
+		{{5,5,7,6,5}, showHideMenuLevel(event_u8,structWorkingValue, displayOutData_pa, 5)},
+		{{6,6,7,6,6}, setTempMinFunction(event_u8,structWorkingValue, displayOutData_pa, 6)},
+		{{7,7,9,8,7}, showHideMenuLevel(event_u8,structWorkingValue, displayOutData_pa, 7)},
+		{{8,8,9,8,8}, setTimeFanFunction(event_u8,structWorkingValue, displayOutData_pa, 8)},
+		{{9,9,11,10,9}, showHideMenuLevel(event_u8,structWorkingValue, displayOutData_pa, 9)},
+		{{10,10,11,10,10}, setHistTempFunction(event_u8,structWorkingValue, displayOutData_pa, 10)},
+		{{11,11,0,12,11}, showHideMenuLevel(event_u8,structWorkingValue, displayOutData_pa, 11)},
+		{{12,12,0,12,12}, setCalibrationFunction(event_u8,structWorkingValue, displayOutData_pa, 12)},
+	};
+	
+	/*
+	menuItem_t tabMenu[5]={
+		//{{SW_UP, SW_DOWN, SW_CHANGE, TIME_CHANGE, IDLE}, pointerToFunction}
+		{{0,0,1,0,0}, voidFunction(event,&Gv_WorkingParam, displayOutData_pa, 0)},
+		{{1,1,3,2,1}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 1)},
+		{{2,2,3,2,2}, setFurnanceWorkTime(event,&Gv_WorkingParam, displayOutData_pa, 2)},
+		{{3,3,0,4,3}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 3},
+		{{4,4,0,4,4}, setFurnanceDelay(event,&Gv_WorkingParam, displayOutData_pa, 4)},
+	};*/
+	
+	/*initialize variable and set states on entry to this state */
+	if (TRUE == Gv_InitOnEntry_bo)
+	{
+		/* remember value in case of return from other states 
+		Gv_StateMachinePrevState_e = SM_IN;	*/
+		
+		/* set current status of hide menu */
+		currentMenuState_u8 = 0u;
+		event_u8 = SW_TIMER;
+		
+		/*clear led after return from delay state*/
+		Gv_LedStatus.TempLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+
+		Gv_FanState_e = FAN_OFF;
+		Gv_LampState_e = LAMP_OFF;
+		Gv_FurState_e = FUR_OFF;
+		/* clear initOnEntry flag - initialize was done*/
+		Gv_InitOnEntry_bo = FALSE;
+	}
+	
+	if (SW_OFF_ON == event_u8)
+	{
+		Gv_StateMachine_e = SM_OFF;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	
+	changeMenu(event_u8, &currentMenuState_u8, tabHideMenu, structWorkingValue, displayOutData_pa);
+	
 	return;
 }
 
 
 
-static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa)
+static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa)
 {
 	static uint8_t tickDislplayMark_u8 = 0u;
 	/* initialize variable on entry to state */
@@ -646,17 +716,30 @@ static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWor
 		
 		/* switching on the lamp */
 		Gv_LampState_e = LAMP_AUTO_ON;
+		
+		/* switching on the furnance on entry */
+		Gv_FurState_e = FUR_ON;
 		/* init display position for point */
 		tickDislplayMark_u8 = 0u;
+		
+		/* reset min timer */
+		TimerMinReset( (uint8_t)TRUE);
 			
 		/* clear initOnEntry flag - initialize was done */
 		Gv_InitOnEntry_bo = FALSE;
 	}
 	
+
 	/* switch executing */
 	if (SW_OFF_ON == event_u8)
 	{
 		Gv_StateMachine_e = SM_OFF;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	else if (		TRUE == processedRSInData->dataInRS.Error1Sen_bo
+				||	TRUE == processedRSInData->dataInRS.Error2Sen_bo)
+	{
+		Gv_StateMachine_e = SM_ERROR;
 		Gv_InitOnEntry_bo = TRUE;
 	}
 	else if(SW_UP == event_u8)
@@ -705,6 +788,20 @@ static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWor
 		; /* do nothing */
 	}
 	
+	//----------histereza zalaczania i wylaczania pieca
+	if (processedRSInData->countedTemperature_s16 <= (structWorkingValue->temperatureHot_u8 - structWorkingValue->histTemp_u8))
+	{
+		Gv_FurState_e = FUR_AUTO_ON;
+	}					
+	else if(processedRSInData->countedTemperature_s16 >= (structWorkingValue->temperatureHot_u8/*+histTemp*/))
+	{
+		Gv_FurState_e = FUR_BREAK;
+	}
+	else
+	{
+		; /* do nothng */
+	} 
+	
 	/* count timer */
 	if(TRUE == Gv_ExtTimer1min_bo)
 	{
@@ -715,51 +812,84 @@ static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWor
 	{
 		Gv_StateMachine_e = SM_FAN_ON;
 		Gv_InitOnEntry_bo = TRUE; 
+		Gv_FurState_e = FUR_OFF;
 	}
 	
 	/* fill LCD data tab by temperature hot*/
-	if (TIMER_EVENT_6S > Gv_Timer8s_u8)
+	if (TIMER_EVENT_8S > Gv_Timer10s_u8)
 	{
 		fillLcdDataTab(TEMP_LCD_CONV_LEVEL, (int16_t)(structWorkingValue->temperatureHot_u8) , displayOutData_pa);
 	}
 	else 
-	{
-		fillLcdDataTab(TEMP_LCD_CONV_LEVEL, (int16_t)(Gv_ActualTemperature_u8) , displayOutData_pa);
+	{	
+		addAnimationToLedDisplay(displayOutData_pa);
+		fillLcdDataTab(TEMP_LCD_CONV_LEVEL, (int16_t)(Gv_WorkingParam.ActualTemperature_s8) , displayOutData_pa);
 	}
 	
 	return ;
 	
 }
 
-static void TimeFlagSet()
+static void addAnimationToLedDisplay(uint8_t *displayOutData_pa)
 {
-	/* clear global flag after one cycle of main function*/
-	if (TRUE == Gv_flag50ms_bo)
-	{
-		Gv_flag50ms_bo = FALSE;
+	if (Gv_Timer10s_u8>TIMER_EVENT_7S)
+	{ 
+		displayOutData_pa[0]= DSL3;
 	}
-	
-	/*clear interrupt flag, set global flag */
-	if (TRUE == Gv_flagInterrupt50ms_bo)
-	{
-		Gv_flagInterrupt50ms_bo = FALSE;
-		Gv_flag50ms_bo = TRUE;
+	else if (Gv_Timer10s_u8>TIMER_EVENT_6S)
+	{ 
+		displayOutData_pa[0]= DSL2;
 	}
-	
+	else if (Gv_Timer10s_u8>TIMER_EVENT_5S)
+	{ 
+		displayOutData_pa[0]= DSL1;
+	}
+	else if (Gv_Timer10s_u8>TIMER_EVENT_4S)
+	{ 
+		displayOutData_pa[0]= SP;
+	}
+	else if (Gv_Timer10s_u8>TIMER_EVENT_3S)
+	{ 
+		displayOutData_pa[0]= DSL3;
+	}
+	else if (Gv_Timer10s_u8>TIMER_EVENT_2S)
+	{ 
+		displayOutData_pa[0]= DSL2;
+	}
+	else if (Gv_Timer10s_u8>TIMER_EVENT_1S)
+	{ 
+		displayOutData_pa[0]= DSL1;
+	}
+	else
+	{ 
+		displayOutData_pa[0]= SP;
+	}	
+		
 	return ;
 }
+
 
 static void ClearAllTimers()
 {
+	Gv_Timer10s_u8 = 0u;
 	Gv_Timer8s_u8 = 0u;
 	Gv_Timer6s_u8 = 0u;
 	Gv_Timer2s_u8 = 0u;
 	Gv_Timer1s_u8 = 0u;
 }
 
-
+/*umieœciæ funkcjê na koñcu programu programu */
 static void TimeCounter()
 {
+	if (TIMER_EVENT_10S == Gv_Timer10s_u8)
+	{
+		Gv_Timer10s_u8 = 0u;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
 	if (TIMER_EVENT_8S == Gv_Timer8s_u8)
 	{
 		Gv_Timer8s_u8 = 0u;
@@ -805,20 +935,50 @@ static void TimeCounter()
 		/* do nothing */
 	}
 	
+	if (TIMER_EVENT_300MS == Gv_Timer300ms_u8)
+	{
+		Gv_Timer300ms_u8 = 0u;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
+	if (TIMER_SWITCH_50MS == Gv_Timer50ms_u8)
+	{
+		Gv_Timer50ms_u8 = 0u;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
+	if (TIMER_EVENT_3S > Gv_Timer3sHideMenu_u8)
+	{
+			Gv_Timer3sHideMenu_u8 ++ ;
+	}
+	else
+	{
+		/* do nothing */
+	}
+	
 	if (TRUE == Gv_flagInterrupt50ms_bo)
 	{
 		Gv_flagInterrupt50ms_bo = FALSE;
+		Gv_Timer10s_u8 ++;
 		Gv_Timer8s_u8 ++;
 		Gv_Timer6s_u8 ++;
 		Gv_Timer2s_u8 ++;
 		Gv_Timer1s_u8 ++;
+		Gv_Timer300ms_u8++;
+		Gv_Timer50ms_u8++;
 	}
 }
 
 
 
 
-static void FurnanceDelayStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa)
+static void FurnanceDelayStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa)
 {
 	if (TRUE == Gv_InitOnEntry_bo)
 	{
@@ -830,14 +990,24 @@ static void FurnanceDelayStateExecute(uint8_t event_u8, strSaunaParam_t * struct
 		Gv_LedStatus.TimerOnLed_u8 = LED_ON;
 		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
 		
+		/* reset min timer */
+		TimerMinReset( (uint8_t)TRUE);
+		
 		/* clear initOnEntry flag - initialize was done */
 		Gv_InitOnEntry_bo = FALSE;
 	}
 	
+
 	/* switch executing */
 	if (SW_OFF_ON == event_u8)
 	{
 		Gv_StateMachine_e = SM_OFF;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	else if (	TRUE == processedRSInData->dataInRS.Error1Sen_bo
+			||	TRUE == processedRSInData->dataInRS.Error2Sen_bo)
+	{
+		Gv_StateMachine_e = SM_ERROR;
 		Gv_InitOnEntry_bo = TRUE;
 	}
 	else if(SW_UP == event_u8)
@@ -968,7 +1138,10 @@ static void FanOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingV
 		Gv_LedStatus.FanLed_u8 = LED_ON;
 		
 		/* switch on the fan */
-		fanState_pu8 = FAN_ON;
+		Gv_FanState_e = FAN_ON;
+		
+		/* reset min timer */
+		TimerMinReset( (uint8_t)TRUE);
 		
 		/* clear initOnEntry flag - initialize was done */
 		Gv_InitOnEntry_bo = FALSE;
@@ -1025,86 +1198,132 @@ static void FanOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingV
 	
 	/* LED display */
 	/* fill LCD data tab by delay timer */
-	fillLcdDataTab(TEMP_LCD_CONV_LEVEL, (int16_t)(Gv_ActualTemperature_u8) , displayOutData_pa);
+	fillLcdDataTab(TEMP_LCD_CONV_LEVEL, (int16_t)(Gv_WorkingParam.ActualTemperature_s8) , displayOutData_pa);
 	
 	return ;
 }
 
 
-		//-------------------------obliczenie aktualnej temperatury po otrzymaniu wszystkich cyfr...
-		if (getAllDigit==1){
-			Gv_ActualTemperature_u8=(uint8_t)TabToTempConv(temp100,temp10,temp1);
-			Gv_ActualTemperature_u8=Gv_ActualTemperature_u8+calibration;
-			getAllDigit=0;
-			makeCount=1;
-		}
+static void ErrorStateExecute(processedDataInRS_t *processedRSInData, strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa)
+{
+	/*used to count position of sec mark on display */
+	static uint8_t tickDislplayMark_u8 = 0u;
+	uint8_t errorId_u8 = 0u;
 		
-static uint8_t SwEventChoose (uint8_t switchCounter_bo)	
- {     
-	uint8_t swEvent_u8 = 0u;
-	if (TRUE == switchCounter_bo)
+	/*initialize variable and set states on entry to this state */
+	if (TRUE == Gv_InitOnEntry_bo)
 	{
-		switchCounter_bo = FALSE;
+		/* remember value in case of return from other states */
+		//Gv_StateMachinePrevState_e = SM_IN;
+			
+		/*clear led after return from delay state*/
+		Gv_LedStatus.TempLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
+		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+			
+		Gv_FanState_e = FAN_OFF;
+		//Gv_LampState_e = LAMP_OFF;
+		Gv_FurState_e = FUR_OFF;
+		
+		/* clear initOnEntry flag - initialize was done*/
+		Gv_InitOnEntry_bo = FALSE;
+			
+		//wyslanie komendy do wylaczenia pieca 
+	}
+		
+		
+	/* switch executing */
+	if (SW_OFF_ON == event_u8)
+	{
+		Gv_StateMachine_e = SM_OFF;
+		Gv_InitOnEntry_bo = TRUE;
+	}
+	
+	if (TRUE == processedRSInData->dataInRS.Error1Sen_bo)
+	{
+		errorId_u8 = SENS_ERROR1;
+	}
+	else if (TRUE == processedRSInData->dataInRS.Error2Sen_bo)
+	{
+		errorId_u8 = SENS_ERROR2;
+	}
+	else
+	{
+		; /* do nothing */
+	}
+		
+	/* fill LCD data tab by temperature hot*/
+	fillLcdDataTab(ERROR_LCD_LEVEL, (int16_t)errorId_u8 , displayOutData_pa);		
+	
+	return ;
+}
+
+static void SwEventChoose (uint8_t *switchCounter_bo, uint8_t *swEvent_u8 )	
+ {     
+	*swEvent_u8 = 0u;
+	if (TIMER_SWITCH_50MS == *switchCounter_bo)
+	{
+		*switchCounter_bo = FALSE;
 	    if ( SHORT == obslugaPrzyciskuKrotkiego2(0u,PINA,0x01u,15u) )// ON/OFF
 		{
-			swEvent_u8 = SW_OFF_ON; 
+			*swEvent_u8 = SW_OFF_ON; 
 		}
 	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(1u,PINA,0x02u,15u) )// LAMP<-TEMP
 		{
-			swEvent_u8 = SW_LAMP; 
+			*swEvent_u8 = SW_LAMP; 
 		}
 	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(2u,PINA,0x04u,15u) )// STRZ GORA
 		{
-			swEvent_u8 = SW_UP; 
+			*swEvent_u8 = SW_UP; 
 		}
 	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(3u,PINA,0x08u,15u) )// WIATRAK<-TIMER
 		{
-			swEvent_u8 = SW_FAN;
+			*swEvent_u8 = SW_FAN;
 		}
 	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(4u,PINA,0x10u,15u) )// MENU<-LAMP2
 		{
-			swEvent_u8 = SW_TIMER;
+			*swEvent_u8 = SW_TIMER;
 		}
 	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(5u,PINA,0x20u,15u) )// STRZ DOL
 		{
-			swEvent_u8 = SW_DOWN; 
+			*swEvent_u8 = SW_DOWN; 
 		}
 	    else if ( SHORT == obslugaPrzyciskuKrotkiego(6u,PINA,0x10u,15u) )// MENU UKRYTE
 		{
-			swEvent_u8 = SW_MENU;
+			*swEvent_u8 = SW_MENU;
 		}
 	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(7u,PINA,0x04u,150u,100u) )// Menu bardzo szybkie pzewijanie UP
 		{
-			swEvent_u8 = SW_VERY_FAST_UP;
+			*swEvent_u8 = SW_VERY_FAST_UP;
 		}
 	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(8u,PINA,0x04u,150u,100u) )// Menu szybkie pzewijanie UP
 	    {
-		    swEvent_u8 = SW_FAST_UP;
+		    *swEvent_u8 = SW_FAST_UP;
 	    }
 	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(9u,PINA,0x20u,150u,100u) )// Menu bardzo szybkie pzewijanie DOWN
 		{
-			swEvent_u8 = SW_VERY_FAST_DOWN;
+			*swEvent_u8 = SW_VERY_FAST_DOWN;
 		}
 	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(10u,PINA,0x20u,150u,100u) )// Menu szybkie pzewijanie DOWN
 	    {
-		    swEvent_u8 = SW_FAST_DOWN;
+		    *swEvent_u8 = SW_FAST_DOWN;
 	    }
 	}
-	return swEvent_u8;
+	return;
  }
 
-static void StateMachine(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8)
+static void StateMachine(uint8_t event_u8, strSaunaParam_t * structWorkingValue,  processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa, uint8_t menuLevel_u8)
 {
 	switch(Gv_StateMachine_e)
 	{
 		case SM_HIDE_MENU:
-			HideMenuStateExecute();
+			HideMenuStateExecute(event_u8, structWorkingValue, displayOutData_pa);
 			break;
 		case SM_OFF:
 			OffStateExecute(event_u8, structWorkingValue, displayOutData_pa);
 			break;
 		case SM_IN:
-			InStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			InStateExecute(event_u8, structWorkingValue, processedRSInData, displayOutData_pa);
 			break;
 		case SM_TEMP_SET:
 			TempSetStateExecute(event_u8, structWorkingValue, displayOutData_pa);
@@ -1113,14 +1332,17 @@ static void StateMachine(uint8_t event_u8, strSaunaParam_t * structWorkingValue,
 			TimerSetStateExecute(event_u8, structWorkingValue, displayOutData_pa);
 			break;
 		case SM_FURNANCE_DELAY:
-			FurnanceDelayStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			FurnanceDelayStateExecute(event_u8, structWorkingValue, processedRSInData, displayOutData_pa);
 			break;
 		case SM_FURNANCE_ON:
-			FurnanceOnStateExecute(event_u8, structWorkingValue, displayOutData_pa);
+			FurnanceOnStateExecute(event_u8, structWorkingValue, processedRSInData, displayOutData_pa);
 			break;
 		case SM_FAN_ON:
 			FanOnStateExecute(event_u8, structWorkingValue, displayOutData_pa);
 			break;
+		case SM_ERROR:
+			ErrorStateExecute(processedRSInData , structWorkingValue, displayOutData_pa);
+		break;
 
 	}
 }
@@ -1139,10 +1361,14 @@ void FurnanceStateMachine(uint8_t* furnanceState_pu8, uint8_t* minMarkFurnance_p
 		case FUR_IDLE: /* IDLE state */
 		
 		break;
-		case FUR_AUTO_ON: /* switch on the furnance */
+		case FUR_ON: /* switch on the furnance for te first time */
 			RsDataTab(RS_FUR_ON, tabDataRS);
 			timerFur_u16 = Gv_WorkingParam.warmingTime_u16;
-			setL(TEMP);
+			Gv_LedStatus.TempLed_u8 = LED_ON;
+			*furnanceState_pu8 = FUR_AUTO_ON_EXEC;
+		break;
+		case FUR_AUTO_ON: /* switch on the furnance for te first time */
+			RsDataTab(RS_FUR_ON, tabDataRS);
 			*furnanceState_pu8 = FUR_AUTO_ON_EXEC;
 		break;
 		case FUR_AUTO_ON_EXEC: /* automatic working of the furnance */
@@ -1151,9 +1377,19 @@ void FurnanceStateMachine(uint8_t* furnanceState_pu8, uint8_t* minMarkFurnance_p
 				*furnanceState_pu8 = FUR_OFF;
 			}
 		break;
+		case FUR_BREAK: /* switch off the furnance for some period because of reach max temperature */
+			 RsDataTab(RS_FUR_OFF, tabDataRS);
+			 *furnanceState_pu8 = FUR_BREAK_EXEC;
+		break;
+		case FUR_BREAK_EXEC: /* switch off the furnance for some period because of reach max temperature */
+			 if(0u == timerFur_u16) /* if timer reach 0 then furnance state change for OFF */
+			 {
+				*furnanceState_pu8 = FUR_OFF;
+			 }
+		break;
 		case FUR_OFF: /* switching off the furnance */
 			RsDataTab(RS_FUR_OFF, tabDataRS);
-			clrL(TEMP);
+			Gv_LedStatus.TempLed_u8 = LED_OFF;
 			*furnanceState_pu8 = FUR_IDLE;
 		break;
 
@@ -1177,16 +1413,17 @@ void FanStateMachine(uint8_t* fanState_pu8, uint8_t* minMarkFan_pu8)
 		break;
 		case FAN_ON1: /* switching on fan in state off */
 			RsDataTab(RS_FAN_ON, tabDataRS);
+			Gv_LedStatus.FanLed_u8 = LED_BLINK;
 			timerFan_u16 = Gv_WorkingParam.delayWarmingTime_u16;
 			*fanState_pu8 = FAN_ON1_EXEC;
 		break;
 		case FAN_ON2: /* switching on fan in state differ than off */
 			RsDataTab(RS_FAN_ON, tabDataRS);
+			Gv_LedStatus.FanLed_u8 = LED_BLINK;
 			timerFan_u16 = Gv_WorkingParam.timerFanSet_u8;
 			*fanState_pu8 = FAN_ON1_EXEC;
 		break;
 		case FAN_ON1_EXEC:/* executing of working lamp after switch on */
-			BlinkLed(FAN, counterL,500u);
 			
 			if(timerFan_u16==0) /* if counter == 0u then fan is switching off */
 			{
@@ -1196,7 +1433,7 @@ void FanStateMachine(uint8_t* fanState_pu8, uint8_t* minMarkFan_pu8)
 		case FAN_AUTO_ON: /* automatic work start */
 			RsDataTab(RS_FAN_ON, tabDataRS);
 			timerFan_u16 = Gv_WorkingParam.timerFanSet_u8;
-			setL(FAN);
+			Gv_LedStatus.FanLed_u8 = LED_ON;
 			*fanState_pu8 = FAN_AUTO_ON_EXEC;
 		break;
 		case FAN_AUTO_ON_EXEC: /* automatic work execute */
@@ -1207,7 +1444,7 @@ void FanStateMachine(uint8_t* fanState_pu8, uint8_t* minMarkFan_pu8)
 		break;
 		case FAN_OFF: /* switch off the fan */
 			RsDataTab(RS_FAN_OFF, tabDataRS);
-			clrL(FAN);
+			Gv_LedStatus.FanLed_u8 = LED_OFF;
 			*fanState_pu8 = FAN_IDLE;
 		break;
 
@@ -1231,12 +1468,11 @@ void LampStateMachine(uint8_t* lampState_pu8, uint8_t* minMarkLamp_pu8)
 		break;
 		case LAMP_ON1: /* switching on in state off */
 			RsDataTab(RS_LAMP_ON, tabDataRS);
+			Gv_LedStatus.ProgLed_u8 = LED_BLINK;
 			timerLamp_u16 = Gv_WorkingParam.delayWarmingTime_u16;
 			*lampState_pu8 = LAMP_ON1_EXEC;
 		break;
-		case LAMP_ON1_EXEC:/* executing of working lamp in state off */
-			BlinkLed(PROG, counterL,500u);
-		
+		case LAMP_ON1_EXEC:/* executing of working lamp in state off */		
 			if(timerLamp_u16 == 0u) /* if counter == 0u then lamp is switching off */
 			{
 				*lampState_pu8 = LAMP_OFF;
@@ -1244,27 +1480,27 @@ void LampStateMachine(uint8_t* lampState_pu8, uint8_t* minMarkLamp_pu8)
 		break;
 		case LAMP_ON2: /* switching on lamp in state differ than off */
 			RsDataTab(RS_LAMP_ON, tabDataRS);
+			Gv_LedStatus.ProgLed_u8 = LED_BLINK;
 			*lampState_pu8 = LAMP_ON2_EXEC;
 		break;
 		case LAMP_ON2_EXEC: /* working lamp in state differ than off */
-			BlinkLed(PROG, counterL,500u);
 		break;
 		case LAMP_AUTO_ON: /* automatic work start */
 			RsDataTab(RS_LAMP_ON, tabDataRS);
-			//timerLamp=structWorkingValue.timerFanSet;
-			setL(PROG);
+			//timerLamp_u16 = Gv_WorkingParam.warmingTime_u16;
+			Gv_LedStatus.ProgLed_u8 = LED_ON;
 			*lampState_pu8 = LAMP_AUTO_ON_EXEC;
 		break;
 		case LAMP_AUTO_ON_EXEC: /* automatic work execute */
 /*
-		if(timerFan==0) //jesli timer dojdzie do zera to wiatrak sie wylacza
+		if(0u == timerLamp_u16) //jesli timer dojdzie do zera to swiatlo sie wylacza
 		{
-			*fanState=5;
+			*lampState_pu8 = LAMP_OFF;
 		}*/
 		break;
 		case LAMP_OFF: /* switching off the lamp */
 			RsDataTab(RS_LAMP_OFF, tabDataRS);
-			clrL(PROG);
+			Gv_LedStatus.ProgLed_u8 = LED_OFF;
 			*lampState_pu8 = LAMP_IDLE;
 		break;
 
@@ -1341,42 +1577,7 @@ static void LedWorkStatus()
 	
 }
 
-	menuItem_t tabHideMenu[13]={
-		//{{SW_UP, SW_DOWN, SW_CHANGE, TIME_CHANGE, IDLE}, pointerToFunction}
-		{{0,0,1,0,0}, voidFunction(event,&Gv_WorkingParam, displayOutData_pa, 0)},
-		{{1,1,3,2,1}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 1)},
-		{{2,2,3,2,2}, setMaxWorkingTimerFunction(event,&Gv_WorkingParam, displayOutData_pa, 2)},
-		{{3,3,5,4,3}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 3)},
-		{{4,4,5,4,4}, setTempMaxFunction(event,&Gv_WorkingParam, displayOutData_pa, 4)},
-		{{5,5,7,6,5}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 5)},
-		{{6,6,7,6,6}, setTempMinFunction(event,&Gv_WorkingParam, displayOutData_pa, 6)},
-		{{7,7,9,8,7}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 7)},
-		{{8,8,9,8,8}, setTimeFanFunction(event,&Gv_WorkingParam, displayOutData_pa, 8)},
-		{{9,9,11,10,9}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 9)},
-		{{10,10,11,10,10}, setHistTempFunction(event,&Gv_WorkingParam, displayOutData_pa, 10)},
-		{{11,11,0,12,11}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 11)},
-		{{12,12,0,12,12}, setCalibrationFunction(event,&Gv_WorkingParam, displayOutData_pa, 12)},
-	};
 	
-	
-	menuItem_t tabMenu[5]={
-		//{{SW_UP, SW_DOWN, SW_CHANGE, TIME_CHANGE, IDLE}, pointerToFunction}
-		{{0,0,1,0,0}, voidFunction(event,&Gv_WorkingParam, displayOutData_pa, 0)},
-		{{1,1,3,2,1}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 1)},
-		{{2,2,3,2,2}, setFurnanceWorkTime(event,&Gv_WorkingParam, displayOutData_pa, 2)},
-		{{3,3,0,4,3}, showHideMenuLevel(event,&Gv_WorkingParam, displayOutData_pa, 3},
-		{{4,4,0,4,4}, setFurnanceDelay(event,&Gv_WorkingParam, displayOutData_pa, 4)},
-	};
-	
-	uint8_t timerFanSet_u8;
-	uint8_t temperatureHotMax;
-	uint8_t temperatureHotMin;
-	uint16_t warmingTime;
-	uint16_t delayWarmingTime;
-	uint8_t temperatureHot;
-	int8_t calibration;
-	uint16_t warmingTimeMax;
-
 	
 void fillTabByLcdDataMenu(uint8_t ledDisplayLevel_u8, uint8_t *displayOutData_pa){
 	
@@ -1388,29 +1589,29 @@ void fillTabByLcdDataMenu(uint8_t ledDisplayLevel_u8, uint8_t *displayOutData_pa
 		previousLevel_u8 = ledDisplayLevel_u8;
 	}
 		
-	displayOutData_pa[0] = F;
-	displayOutData_pa[2] = sp;
-	displayOutData_pa[3] = sp;
+	displayOutData_pa[1] = LF;
+	displayOutData_pa[2] = SP;
+	displayOutData_pa[3] = SP;
 	
 	switch (ledDisplayLevel_u8)
 	{
 		case 0://menu 1
-			displayOutData_pa[1] = d1;
+			displayOutData_pa[0] = D1;
 		break;
 		case 1: //menu 2
-			displayOutData_pa[1] = d2;
+			displayOutData_pa[0] = D2;
 		break;
 		case 2://menu 3
-			displayOutData_pa[1] = d3;
+			displayOutData_pa[0] = D3;
 		break;
 		case 3://menu 4
-			displayOutData_pa[1] = d4;
+			displayOutData_pa[0] = D4;
 		break;
 		case 4://menu 5
-			displayOutData_pa[1] = d5;
+			displayOutData_pa[0] = D5;
 		break;
 		case 5://menu 6
-			displayOutData_pa[1] = d6;
+			displayOutData_pa[0] = D6;
 		break;
 	}
 	
@@ -1454,58 +1655,58 @@ void fillLcdDataTab(uint8_t conversionLevel_u8, int16_t valueToConvert_u16, uint
 				TimeConv((uint16_t)valueToConvert_u16,digData_a);
 				TimeConvToDsp(digData_a,displayOutData_pa);
 			break;	
+			case 3:
+				displayOutData_pa[3] = SP;
+				displayOutData_pa[2] = SP;
+				displayOutData_pa[1] = LE;
+				if (SENS_ERROR1 == valueToConvert_u16)
+				{
+					displayOutData_pa[0] = D1;
+				}
+				else if (SENS_ERROR2 == valueToConvert_u16)
+				{
+					displayOutData_pa[0] = D2;
+				}
+				else 
+				{
+					displayOutData_pa[0] = D0;
+				}
+			break;
 		}
 		
 		return;
 	}
 	
-	
-	
-	volatile uint8_t	currentMenu = 0;
-	volatile uint8_t	event = E_IDLE;
-
-	
-	void saveToEEPROM(uint8_t* saveFlag, strSaunaParam_t* savedValue)
+void saveToEEPROM(uint8_t* saveFlag, strSaunaParam_t* savedValue)
+{
+	if (*saveFlag==1)
 	{
-		if (*saveFlag==1)
-		{
-			eeprom_write_block(savedValue,&strParamE1,sizeof(savedValue));	
-			*saveFlag=0;
-		}
+		eeprom_write_block(savedValue,&strParamE1,sizeof(savedValue));	
+		*saveFlag=0;
+	}
 			
-	}
-	
-	void changeMenu(uint8_t *event_pu8, strSaunaParam_t *structure_pstr , uint8_t * tab_pu8 )
-	{
-		//przejdz do nastepnego stanu
-		if(*event_pu8==H_MENU_NEXT_ITEM || *event_pu8==H_MENU_NEXT_ITEM_TIM)
-		{	
-			currentMenu = tabHideMenu[currentMenu].next_state[event_pu8];	
-		}
-		//wywolaj funkcje zwrotna
-		tabHideMenu[currentMenu].callback(*event_pu8,structure_pstr, tab_pu8);
-		//wyswietl komunikat skojarzony z pozycja (opcja)
-		
-		//skasuj zdarzenie
-		*event_pu8 = E_IDLE;
-	}
-	
-	changeMenuLevelByTimer(uint8_t *event_pu8, uint8_t *changeMenuTimer_pu16)
-	{
-		if (H_MENU_NEXT_ITEM == *event_pu8)
-		{
-			*changeMenuTimer_pu16 = TIME_3S;
-		}
-		if (0 == *chaneMenuTimer)
-		{
-			*event_pu8 = H_MENU_NEXT_ITEM_TIM;
-		}
-	}
+}
 
 	
-	
-	
-	
+static void changeMenu(uint8_t event_u8, uint8_t *currentMenuState_u8, menuItem_t *tabHideMenu, strSaunaParam_t *structure_pstr , uint8_t * tab_pu8 )
+{
+	const uint8_t switchEvent_u8 = 2u; /* to choose proper position in tab related witch sw event */
+	const uint8_t timeExpired_u8 = 3u; /* to choose proper position in tab related witch time expired */
+	/* choose  menu state by switch and after 3s info go to settings */
+	if ( SW_TIMER == event_u8 )
+	{	
+		*currentMenuState_u8 = tabHideMenu[*currentMenuState_u8].nextState_au8[switchEvent_u8];	
+		Gv_Timer3sHideMenu_u8 = 0u;	
+	}
+	else if ( TIMER_EVENT_3S == Gv_Timer3sHideMenu_u8)		
+	{	
+		*currentMenuState_u8 = tabHideMenu[*currentMenuState_u8].nextState_au8[timeExpired_u8];
+		Gv_Timer3sHideMenu_u8 ++;
+	}
+		
+	/* call proper function */
+	tabHideMenu[*currentMenuState_u8].callback(event_u8,structure_pstr, tab_pu8);
+}
 	
 void TimeConv(uint16_t time_u16, uint8_t digTime[4]){
 	digTime[0]=(uint8_t)(time_u16/600);
@@ -1584,13 +1785,13 @@ void TempConvToDigit (uint16_t temperature_u16, uint8_t digTemp_au8[4])
 { 
 	/*funkcja nie uwzglednia ujemnych temperatur poniewaz jest 
 	  wykozystywana tylko do manipulacji na dodatnich temperaturach*/
-	digTemp_au8[0] = 0x00;
-	digTemp_au8[1] = (uint8_t)temperature_u16/100;
-	digTemp_au8[2] = (uint8_t)(temperature_u16%100)/10;
-	digTemp_au8[3] = (uint8_t)(temperature_u16%100)%10;
+	digTemp_au8[0] = 0x00u;
+	digTemp_au8[1] = (uint8_t)temperature_u16/100u;
+	digTemp_au8[2] = (uint8_t)(temperature_u16%100u)/10u;
+	digTemp_au8[3] = (uint8_t)(temperature_u16%100u)%10u;
 }
 
-int16_t TabToTempConv(uint8_t firstDig100_u8, uint8_t secDigit10_u8, uint8_t  thrDigit1_u8)
+static int16_t TabToTempConv(uint8_t firstDig100_u8, uint8_t secDigit10_u8, uint8_t  thrDigit1_u8)
 {
 	int16_t temperature_s16;
 	
@@ -1607,7 +1808,443 @@ int16_t TabToTempConv(uint8_t firstDig100_u8, uint8_t secDigit10_u8, uint8_t  th
 }
 
 
-//////////////////////////////////////////////////////////////
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: SensorTemperatureCalibration(int16_t dataFromSensor_s16)
+*
+* FUNCTION ARGUMENTS:
+*    dataFromSensor_s16 - temperature read from sensor
+*
+* RETURN VALUE:
+*    NOne
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to calibrate temperature received from temperature sensor according to calibration factory.
+*
+*---------------------------------------------------------------------------*/
+static void SensorTemperatureCalibration(int16_t dataFromSensor_s16)
+{
+		Gv_WorkingParam.ActualTemperature_s8 = dataFromSensor_s16 + Gv_WorkingParam.calibration_s8;
+}
+
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: CheckData485Presence()
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    retVal_bo - TRUE if data are present in buffer, FALSE if no dta in buffer
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to check presence of data in input buffer, return TRUE if any data are present in buffer
+*
+*---------------------------------------------------------------------------*/
+static uint8_t CheckData485Presence()
+{
+	uint8_t retVal_bo = FALSE;
+	uint8_t i_u8 = 0u;
+	for ( i_u8 == 0u; i_u8 <= 9u; i_u8++)
+	{
+		if (Gv_tabRec_au8[i_u8] != 0u)
+		{
+			retVal_bo = TRUE;
+		}
+		else 
+		{
+			; /* do nothing */
+		}
+	}
+	return retVal_bo;
+}
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: ProcessInputRSData(processedDataInRS_t *processedRSData)
+*
+* FUNCTION ARGUMENTS:
+*    processedRSData - pointer to struct with RS data processed by program
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to fill input Structure with proper data, depending on data received from RS485 line
+*
+*---------------------------------------------------------------------------*/
+static void ProcessInputRSData(processedDataInRS_t *processedRSData)
+{
+		if (TRUE == CheckData485Presence())
+		{
+			switch ( Gv_tabRec_au8[9] ){
+				case 0x20: /* RS data indicating minute mark */
+					processedRSData->dataInRS.MinuteEvent_bo = TRUE;
+				break;
+				case 0x21: /* RS data indicating error with temperature sensor */
+					processedRSData->dataInRS.Error1Sen_bo = TRUE;
+				break;
+				case 0x22:
+				break;
+				case 0x23: /* RS data indicating error with temperature sensor */
+					processedRSData->dataInRS.Error2Sen_bo = TRUE;
+				break;
+				case 0x24:
+				break;
+				/* RS data indicating used to calculate actual temperature read by sensor */
+				case 0x32:
+					/* information about 0 degree on most significant position */
+					processedRSData->dataInRS.Temp100_u8 = 0u;
+				break;
+				case 0x33:
+					/* information about 100 degree on most significant position */
+					processedRSData->dataInRS.Temp100_u8 = 100u;
+				break;
+				case 0x34:
+					/* information about temperature below 0,  "-" sign on most significant position */
+					processedRSData->dataInRS.Temp100_u8 = 2u; 
+				break;
+				case 0x35:
+					/* information about 0 degree on medium significant position */
+					processedRSData->dataInRS.Temp10_u8 = 0u;
+				break;
+				case 0x36:
+					/* information about 10 degree on medium significant position */
+					processedRSData->dataInRS.Temp10_u8 = 10u;
+				break;
+				case 0x37:
+					processedRSData->dataInRS.Temp10_u8 = 20u;
+				break;
+				case 0x38:
+					processedRSData->dataInRS.Temp10_u8 = 30u;
+				break;
+				case 0x39:
+					processedRSData->dataInRS.Temp10_u8 = 40u;
+				break;
+				case 0x3A:
+					processedRSData->dataInRS.Temp10_u8 = 50u;
+				break;
+				case 0x3B:
+					processedRSData->dataInRS.Temp10_u8 = 60u;
+				break;
+				case 0x3C:
+					processedRSData->dataInRS.Temp10_u8 = 70u;
+				break;
+				case 0x3D:
+					processedRSData->dataInRS.Temp10_u8 = 80u;
+				break;
+				case 0x3E:
+					processedRSData->dataInRS.Temp10_u8 = 90u;
+				break;
+				case 0x3F:
+					processedRSData->dataInRS.Temp1_u8 = 0u;
+				break;
+				case 0x40:
+					processedRSData->dataInRS.Temp1_u8 = 1u;
+				break;
+				case 0x41:
+					processedRSData->dataInRS.Temp1_u8 = 2u;
+				break;
+				case 0x42:
+					processedRSData->dataInRS.Temp1_u8 = 3u;
+				break;
+				case 0x43:
+					processedRSData->dataInRS.Temp1_u8 = 4u;
+				break;
+				case 0x44:
+					processedRSData->dataInRS.Temp1_u8 = 5u;
+				break;
+				case 0x45:
+					processedRSData->dataInRS.Temp1_u8 = 6u;
+				break;
+				case 0x46:
+					processedRSData->dataInRS.Temp1_u8 = 7u;
+				break;
+				case 0x47:
+					processedRSData->dataInRS.Temp1_u8 = 8u;
+				break;
+				case 0x48:
+					processedRSData->dataInRS.Temp1_u8 = 9u;
+				break;
+				default:
+					;
+				break;
+				
+			}
+			/* remove recently read data from array*/
+			RsShiftTab(Gv_tabRec_au8);
+			
+			/* convert received temperature to degrees if last digit was received */
+			if (processedRSData->dataInRS.Temp1_u8 != INVALID)
+			{
+				processedRSData->countedTemperature_s16 = TabToTempConv(
+												processedRSData->dataInRS.Temp100_u8,
+												processedRSData->dataInRS.Temp10_u8,
+												processedRSData->dataInRS.Temp1_u8);
+				/* set to INVALID to prevent recalculating temperature if new data won't come */
+				processedRSData->dataInRS.Temp1_u8 = INVALID;	
+			}
+
+		}
+}
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: TimerMinReset(uint8_t statusReset_bo)
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to reset Minute counter in Base Module; Reset of this counter is neceserry when we go back from 
+*    menu options, or temperature options to state where we count furnance time or delay time.
+*
+*---------------------------------------------------------------------------*/
+static void TimerMinReset(uint8_t *statusReset_bo)
+{
+	if(TRUE == *statusReset_bo)
+	{
+		RsDataTab(RS_MIN_RES, tabDataRS);
+		*statusReset_bo = FALSE;
+	}
+	
+}
+
+static void OnOffRSinfoSend(uint8_t statusSend_bo)
+{
+	if (TRUE == statusSend_bo)
+	{
+		RsDataTab(RS_CTRL_ON, tabDataRS);
+	}
+	else if (FALSE == statusSend_bo)
+	{
+		RsDataTab(RS_CTRL_OFF, tabDataRS);
+	}
+	else 
+	{
+		; /* do nothing */
+	}
+}
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: SendDisplayPresence()
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Send information to Main Module every 300ms?? to confirm presence of the Panel Module,
+*    in case of panel absence Main Module should be switched off.
+*
+*---------------------------------------------------------------------------*/
+static void SendDisplayPresence()
+{
+	static uint8_t sendPanelInfo_bo = FALSE;
+	if (TIMER_EVENT_300MS == Gv_Timer300ms_u8)
+	{
+		if (sendPanelInfo_bo == TRUE)
+		{
+			RsDataTab(0x01, tabDataRS);
+			sendPanelInfo_bo = FALSE;
+		}
+	}
+	else 
+	{
+		sendPanelInfo_bo = TRUE;
+	}
+	        
+}
+
+
+		//badanie flag od stanow awaryjnych czujnikow
+		if (error1SenM==1 && !(workPanelStateF==0) && error2SenM==0) {workPanelStateF=2;}
+		else if (error2SenM==1 && !(workPanelStateF==0)) {workPanelStateF=3;}
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: OutputExecute(uint8_t tabOutDsp_au8)
+*
+* FUNCTION ARGUMENTS:
+*    tabOutDsp_au8 - data foe LED display
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function execute every cycle in main, used to set output informations.
+*
+*---------------------------------------------------------------------------*/
+static void OutputExecute(uint8_t tabOutDsp_au8, uint8_t *statusTimerReset_bo)
+{
+	LampStateMachine(); 
+	FanStateMachine();
+	FurnanceStateMachine();
+	SendDisplayPresence(); 
+	TimerMinReset(statusTimerReset_bo);
+	DsLedSend(tabOutDsp_au8[0], tabOutDsp_au8[1], tabOutDsp_au8[2], tabOutDsp_au8[3]);
+	LedWorkStatus();
+}
+
+
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: main()
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Main function to execute program.
+*
+*---------------------------------------------------------------------------*/
+int main(void)
+{	
+	uint8_t event_u8 = 0u;
+	static strSaunaParam_t structWorkingValue = {0u};
+	static uint8_t displayOutData_au8[4] = {0u};
+	static uint8_t menuLevel_u8 = 0u;
+	static processedDataInRS_t processedRSInData = {{0u}, 0};
+	
+	SetRegisterUC(); /* set register status */
+	
+	while(1)
+	{
+		TimeCounter(); /* function to increment timers */
+		ProcessInputRSData(&processedRSInData); /* switch execute, input 485 data execute */
+		SwEventChoose(&Gv_Timer50ms_u8, &event_u8);
+		SensorTemperatureCalibration(processedRSInData.countedTemperature_s16);
+
+		StateMachine(event_u8, &structWorkingValue, &processedRSInData, displayOutData_au8, menuLevel_u8);
+		OutputExecute(); /* led execute, display led execute, rsData set*/	
+	}
+
+}
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: SetRegisterUC()
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to set all register for proper work of microcontroller.
+*
+*---------------------------------------------------------------------------*/
+static void SetRegisterUC()
+{
+	DDRB = 0x00;
+	DDRC = 0x00;
+	DDRD = 0x00;
+	PORTB = 0x00;
+	PORTC = 0x00;
+	PORTD = 0x00;
+	
+	/* set unused IO pins */
+	DDRA |= (1<<PA6);
+	PORTA |= (1<<PA6);
+	DDRA |= (1<<PA7);
+	PORTA |= (1<<PA7);
+	DDRB |= (1<<PB2);
+	PORTB |= (1<<PB2);
+	DDRB |= (1<<PB3);
+	PORTB |= (1<<PB3);
+	DDRC |= (1<<PC5);
+	PORTC |= (1<<PC5);
+	DDRC |= (1<<PC6);
+	PORTC |= (1<<PC6);
+	DDRC |= (1<<PC7);
+	PORTC |= (1<<PC7);
+
+	/* set pins for LED display */
+	DDRD |= (1<<PD4) | (1<<PD5) | (1<<PD6) | (1<<PD7);
+	PORTD |= (1<<PD4) | (1<<PD5) | (1<<PD6) | (1<<PD7);
+	
+	/* set pins for used switch */
+	DDRA &= ~(1<<PA0);
+	DDRA &= ~(1<<PA1);
+	DDRA &= ~(1<<PA2);
+	DDRA &= ~(1<<PA3);
+	DDRA &= ~(1<<PA4);
+	DDRA &= ~(1<<PA5);
+	DDRA &= ~(1<<PA6);
+	DDRA &= ~(1<<PA7);
+	PORTA |= (1<<PA0) | (1<<PA1) | (1<<PA2) | (1<<PA3) | (1<<PA4) | (1<<PA5);// | (1<<PA6) | (1<<PA7);
+
+	/* set pins for RS485 connection - Master configuration */
+	DDRD |= (1<<PD2);
+	PORTD &= ~(1<<PD2);
+	DDRD &= ~(1<<PD3);
+	PORTD &= ~(1<<PD3);
+	
+	DDRB |= (1<<PB1);
+	PORTB &= ~(1<<PB1);
+
+	/* set pins for LED diode */
+	/* set pins as outputs */
+	DDRC |= (1<<PC0) | (1<<PC1) | (1<<PC2) | (1<<PC3) | (1<<PC4) ;//| (1<<PC5) | (1<<PC6); 
+	/* set pins in High state */
+	PORTC &= ~(1<<PC0); PORTC &= ~(1<<PC1); PORTC &= ~(1<<PC2); PORTC &= ~(1<<PC3); PORTC &= ~(1<<PC4); /*PORTC &= ~(1<<PC5); PORTC &= ~(1<<PC6); */
+
+	/* set pins for buzzer */
+
+	DDRB |= (1<<PB0); /* pin 0 - set as output*/
+	PORTB &= ~(1<<PB0); /* set pin on LOW level on start */
+	
+	/* initialize SPI connection */
+	SPI_Init();
+	
+	/* initialize USART connection and USART interruption */
+	USART_Init(38400, 16000000);
+	USART_InitInterrupt();
+	/* initialize timera0 interruption */
+	Timer0Init(194);
+	/* initialize timera2 interruption */
+	Timer2Init(194);
+
+	_delay_ms(300);
+	//savedValue=defaultVal;
+	if ((eeprom_read_byte(&eAddr))==0xFF){
+		eeprom_write_block(&defaultVal,&strParamE1,sizeof(defaultVal));
+	eeprom_write_byte(&eAddr, 0);}
+	if ((eeprom_read_byte(&eAddr))==0){
+		eeprom_read_block(&savedValue,&strParamE1,sizeof(savedValue));
+		histTemp=savedValue.histTemp;
+		timerFanSet=savedValue.timerFanSet;
+		temperatureHotMax=savedValue.temperatureHotMax;
+		temperatureHotMin=savedValue.temperatureHotMin;
+		warmingTime=savedValue.warmingTime;
+		delayWarmingTime=savedValue.delayWarmingTime;
+		temperatureHot=savedValue.temperatureHot;
+		calibration=savedValue.calibration;
+		warmingTimeMax=savedValue.warmingTimeMax;
+		
+	}
+	
+	_delay_ms(300);
+	/* set global flag for interruption*/
+	sei();
+	
+	/* set watch dog */
+	wdt_enable(WDTO_2S);	
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////// STARY PROGRAM /////////////////////////////////////////////////////////////////////////////
 
 
 /*
