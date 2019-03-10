@@ -12,49 +12,12 @@ histereza zalaczania pieca - poprawic funkcje do obslugi wysylania danych zalacz
 */
 /* static value in main function */
 
-/* struct to save the processed data from RS485 */
-typedef struct {
-	uint8_t MinuteEvent_bo;
-	uint8_t Error1Sen_bo;
-	uint8_t Error2Sen_bo;
-	uint8_t Temp100_u8;
-	uint8_t Temp10_u8;
-	uint8_t Temp1_u8;
-}inputDataRS_t;
-
-/* struct to save the processed input data from RS485 and calculated temperature */
-typedef struct {
-	inputDataRS_t dataInRS;
-	uint16_t countedTemperature_s16;
-}processedDataInRS_t;
 
 
 /*==========================*/
 
+/* global variable - start block*/
 
-/* global variable */
-volatile uint8_t Gv_switchCounter_bo = FALSE; /* !< variable set in 50ms timer interrupt to indicate 50ms time gap >!*/
-volatile uint8_t Gv_flagInterrupt50ms_bo = FALSE;	/* !< variable set in 20ms timer interrupt to indicate 20ms time gap >!*/
-volatile uint8_t Gv_tabRec_au8[10] = {0u}; /* table for input RS data */
-
-
-uint8_t Gv_flag50ms_bo;			/* !< flag set every 50ms used to increment static timer in function >!*/
-
-uint8_t Gv_Timer10s_u8 = 0u;	/* !< timer used to count 10s period >!*/
-uint8_t Gv_Timer8s_u8 = 0u;		/* !< timer used to count 8s period >!*/
-uint8_t Gv_Timer6s_u8 = 0u;		/* !< timer used to count 6s period >!*/
-uint8_t Gv_Timer3s_u8 = 0u;		/* !< timer used to count 3s period >!*/
-uint8_t Gv_Timer2s_u8 = 0u;		/* !< timer used to count 2s period >!*/
-uint8_t Gv_Timer1s_u8 = 0u;		/* !< timer used to count 1s period >!*/
-uint8_t Gv_Timer300ms_u8 = 0u;	/* !< timer used to count 300ms period >!*/
-uint8_t Gv_Timer50ms_u8 = 0u;	/* !< timer used to count 50ms period >!*/
-uint8_t Gv_Timer3sHideMenu_u8 = 0u; /* !< timer used to count 3s period in hide manu >!*/
-
-uint8_t Gv_ExtTimer1min_bo;		/* !< fag used to indicate 1min period >!*/
-
-stateLamp_t Gv_LampState_e;
-stateFan_t Gv_FanState_e;
-stateFurnance_t Gv_FurState_e;
 /* global variable - finish block*/
 
 /*----- macro definition --------- */
@@ -75,21 +38,34 @@ stateFurnance_t Gv_FurState_e;
 #define RS_FAN_OFF		0x0Cu
 #define RS_MIN_RES		0x0Du
 
+/* maximum, minimum and default values for hidden menu parameters */
 #define TIM_MENU_CHANGE 2000u
+
 #define CALIBRATION_MAX 10
 #define CALIBRATION_MIN -10
-#define WARMING_TIME_MIN 10u
-#define WARMING_TIME_MAX 360u
+#define CALIBRATION_DEF 0
+#define WARMING_TIME_MAX_MIN 10u
+#define WARMING_TIME_MAX_MAX 360u
+#define WARMING_TIME_MAX_DEF 240u
 #define TEMPERATURE_HOTMAX_MAX 110u
 #define TEMPERATURE_HOTMAX_MIN 50u
+#define TEMPERATURE_HOTMAX_DEF 90u
 #define TEMPERATURE_HOTMIN_MAX 50u
 #define TEMPERATURE_HOTMIN_MIN 30u
+#define TEMPERATURE_HOTMIN_DEF 50u
 #define HIST_TEMP_MAX 5u
 #define HIST_TEMP_MIN 2u
+#define HIST_TEMP_DEF 2u
 #define TIMER_FAN_MAX 60u
 #define TIMER_FAN_MIN 5u
+#define TIMER_FAN_DEF 10u
+
+/* default values for settings */
+/*#define WARMING_TIME_DEF 240u this should be set for actual value of WARMING_TIME_MAX parameter */ 
+#define TEMPERATURE_HOT_DEF 50u
 #define DELAY_WARMING_TIME_MIN 0u
 #define DELAY_WARMING_TIME_MAX 7200u
+#define DELAY_WARMING_TIME_DEF 0u
 
 /* value for time event */
 #define TIMER_EVENT_1S		20u		/* !< indicate 1s period >!*/
@@ -104,16 +80,10 @@ stateFurnance_t Gv_FurState_e;
 #define TIMER_EVENT_300MS	6u		/* !< indicate 300ms period >!*/
 #define TIMER_SWITCH_50MS	1u		/* !< indicate 50ms period >!*/
 
-/*fan states */
-#define FAN_IDLE		0u
-#define FAN_OFF			1u
-#define FAN_ON			2u
-#define FAN_ON_EXEC		3u
-
 /* value for led management*/
-#define LED_OFF 0
-#define LED_ON 1
-#define LED_BLINK 2
+#define LED_OFF 0u
+#define LED_ON 1u
+#define LED_BLINK 2u
 
 /* value for in state */
 #define TIME_TO_OFF 900u  /* !< sec to off controller from in state */
@@ -172,18 +142,50 @@ stateFurnance_t Gv_FurState_e;
 
 /* -------------TYPE DEFINITIONS ---------------*/
 
+
+/*! \struct to save the processed data from RS485 */
 typedef struct {
-	uint8_t		histTemp_u8;
-	uint8_t		timerFanSet_u8;
-	uint8_t		temperatureHotMax_u8;
-	uint8_t		temperatureHotMin_u8;
-	uint16_t	warmingTime_u16;
-	uint16_t	delayWarmingTime_u16;
-	uint8_t		temperatureHot_u8;
-	int8_t		calibration_s8;
-	uint16_t	warmingTimeMax_u16;
+	uint8_t MinuteEvent_bo;
+	uint8_t Error1Sen_bo;
+	uint8_t Error2Sen_bo;
+	uint8_t Temp100_u8;
+	uint8_t Temp10_u8;
+	uint8_t Temp1_u8;
+}inputDataRS_t;
+
+/*! \struct to save the processed input data from RS485 and calculated temperature */
+typedef struct {
+	inputDataRS_t dataInRS;
+	uint16_t countedTemperature_s16;
+}processedDataInRS_t;
+
+/*! \Structure to save sauna parameter which are written to EEPROM memory */
+typedef struct {
+	/* parameter saved in EEPROM memory */
+	uint16_t	WarmingTimeMax_u16;
+	uint8_t		TemperatureHotMax_u8;
+	uint8_t		TemperatureHotMin_u8;
+	uint8_t		TimerFanSet_u8;
+	uint8_t		HistTemp_u8;
+	int8_t		Calibration_s8;
+}strSaunaSavedParameter_t;
+
+/*! \ Structure to save sauna parameter */
+typedef struct {
+	/* parameter saved in EEPROM memory */
+	strSaunaSavedParameter_t HiddenMenuParam;
+	/* parameter not saved at this moment in EEPROM memory */
+	uint16_t	WarmingTime_u16;
+	uint16_t	DelayWarmingTime_u16;
+	uint8_t		TemperatureHot_u8;
 	int8_t		ActualTemperature_s8;		/* !< variable stored temperature readed from sensor and modified by calibration factor>!*/
 }strSaunaParam_t;
+
+/*! \struct to save execute hidden menu */
+typedef struct{
+	uint8_t nextState_au8[5];		/* !< tab for store next states which will be execute in case of switch event or time event >!*/
+	void (*callback)(uint8_t event_u8, strSaunaParam_t *Gv_WorkingParam, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);	/* !< pointer for function which will be called in case of call of this struct element >!*/
+} menuItem_t;
 
 /*! \brief Stores  information about LED status */
 typedef struct {
@@ -204,9 +206,9 @@ typedef enum{
 	D6	= 0x82u,
 	D7	= 0xF8u,
 	D8	= 0x80u,
-	D9	= 0x90u,
-	LF	= 0x8Eu,
-	SP	= 0xFFu;
+	D9	 = 0x90u,
+	LEF	 = 0x8Eu,
+	SPCJ = 0xFFu,
 	Lo	 = 0xA3u,
 	Ln   = 0xABu,
 	Lf	 = 0x7Eu,
@@ -222,14 +224,12 @@ typedef enum{
 	SM_HIDE_MENU		= 0u,
 	SM_OFF				= 1u,
 	SM_IN				= 2u,
-	SM_FAN_SET			= 3u,
-	SM_LAMP_SET			= 4u,
-	SM_TEMP_SET			= 5u,
-	SM_TIMER_SET		= 6u,
-	SM_FURNANCE_ON		= 7u,
-	SM_FURNANCE_DELAY	= 8u,
-	SM_FAN_ON			= 9u,
-	SM_ERROR			= 10u,
+	SM_TEMP_SET			= 3u,
+	SM_TIMER_SET		= 4u,
+	SM_FURNANCE_ON		= 5u,
+	SM_FURNANCE_DELAY	= 6u,
+	SM_FAN_ON			= 7u,
+	SM_ERROR			= 8u,
 }stateMachine_t;
 
 typedef enum{
@@ -243,7 +243,6 @@ typedef enum{
 	LAMP_AUTO_ON_EXEC	= 7u,
 }stateLamp_t;
 
-
 typedef enum{
 	FAN_IDLE			= 0u,
 	FAN_OFF				= 1u,
@@ -255,6 +254,13 @@ typedef enum{
 	FAN_AUTO_ON_EXEC	= 7u,
 }stateFan_t;
 
+/*fan states */
+/*#define FAN_IDLE	0u
+#define FAN_OFF		1u
+#define FAN_ON		2u
+#define FAN_ON_EXEC	3u
+*/
+
 typedef enum{
 	FUR_IDLE			= 0u,
 	FUR_OFF				= 1u,
@@ -262,9 +268,7 @@ typedef enum{
 	FUR_AUTO_ON			= 3u,
 	FUR_AUTO_ON_EXEC	= 4u,
 	FUR_BREAK			= 5u,
-	FUR_BREAK_EXEC		= 6u,
-	FUR_BREAK			= 7u,
-	
+	FUR_BREAK_EXEC		= 6u,	
 }stateFurnance_t;
 
 /*!----------------------------------------------------------------------------
@@ -277,5 +281,223 @@ typedef enum{
 * \return None
 *
 *---------------------------------------------------------------------------*/
+
+
+static void saveDefaultParameterToEeprom(strSaunaSavedParameter_t *structEepromParam);
+
+static void initEepromStruct(strSaunaParam_t *structWorkingValue, strSaunaSavedParameter_t* structEepromParam, uint8_t* eepromAddr_u8);
+
+static void fillWorkingStructDuringStart(strSaunaParam_t *structWorkingValue, strSaunaSavedParameter_t *structEepromParam);
+
+static void SaveToEEPROM(strSaunaParam_t* savedValue);
+
+static void fillWorkingStructDuringSwitchingOn(strSaunaParam_t *structWorkingValue);
+
+static void voidFunction(uint8_t event,strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+	
+static void setHistTempFunction(uint8_t event_u8,strSaunaParam_t* structWorkingValue_pstr, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+	
+static void setCalibrationFunction(uint8_t event_u8,strSaunaParam_t* structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+	
+static void setMaxWorkingTimerFunction(uint8_t event_u8,strSaunaParam_t* structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+
+static void setTempMaxFunction(uint8_t event_u8,strSaunaParam_t* structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+	
+static void setTempMinFunction(uint8_t event_u8,strSaunaParam_t* structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+
+static void setTimeFanFunction(uint8_t event_u8,strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+	
+static void setFurnanceWorkTime(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
+	
+static void setFurnanceDelay(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
+	
+static void TempSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
+
+static void OffStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t* displayOutData_pa);
+
+static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, processedDataInRS_t *processedRSInData, uint8_t* displayOutData_pa);
+
+static void HideMenuStateExecute(uint8_t event_u8, strSaunaParam_t *structWorkingValue, uint8_t* displayOutData_pa);
+
+static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa);
+
+static void addAnimationToLedDisplay(uint8_t *displayOutData_pa);
+
+static void ClearAllTimers();
+/*umieœciæ funkcjê na koñcu programu programu */
+static void TimeCounter();
+
+static void FurnanceDelayStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa);
+
+static void TimerSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
+
+static void FanOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
+
+static void ErrorStateExecute(uint8_t event_u8, processedDataInRS_t *processedRSInData, strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa);
+
+static void SwEventChoose (uint8_t *switchCounter_bo, uint8_t *swEvent_u8 );
+
+static void StateMachine(uint8_t event_u8, strSaunaParam_t * structWorkingValue,  processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+
+static void FurnanceStateMachine(strSaunaParam_t *structWorkingValue, processedDataInRS_t *processedRSInData);
+
+static void FanStateMachine(strSaunaParam_t *structWorkingValue, processedDataInRS_t *processedRSInData);
+
+static void LampStateMachine(strSaunaParam_t *structWorkingValue, processedDataInRS_t *processedRSInData);
+
+static void LedWorkStatus();
+
+static void fillTabByLcdDataMenu(uint8_t ledDisplayLevel_u8, uint8_t *displayOutData_pa);
+		
+static void fillLcdDataTab(uint8_t conversionLevel_u8, int16_t valueToConvert_u16, uint8_t *displayOutData_pa);
+
+static void changeMenu(uint8_t event_u8, uint8_t *currentMenuState_u8, menuItem_t *tabHideMenu, strSaunaParam_t *structure_pstr , uint8_t * tab_pu8 );
+
+static void TimeConv(uint16_t time_u16, uint8_t digTime[]);
+
+static void DigConvToDsp(uint8_t tabIn_au8[], uint8_t tabOutDsp_au8[]);
+
+static void TimeConvToDsp(uint8_t tabIn_au8[], uint8_t tabOutDsp_au8[]);
+
+static void DigTempConvToDsp(uint8_t tabInDigit_au8[], uint8_t tabOutLcdRepresentation_au8[]);
+
+static void TempConvToDigit (uint16_t temperature_u16, uint8_t digTemp_au8[]);
+
+static int16_t TabToTempConv(uint8_t firstDig100_u8, uint8_t secDigit10_u8, uint8_t  thrDigit1_u8);
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: SensorTemperatureCalibration(int16_t dataFromSensor_s16)
+*
+* FUNCTION ARGUMENTS:
+*    dataFromSensor_s16 - temperature read from sensor
+*
+* RETURN VALUE:
+*    NOne
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to calibrate temperature received from temperature sensor according to calibration factory.
+*
+*---------------------------------------------------------------------------*/
+static void SensorTemperatureCalibration(strSaunaParam_t *structWorkingValue, int16_t dataFromSensor_s16);
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: CheckData485Presence()
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    retVal_bo - TRUE if data are present in buffer, FALSE if no dta in buffer
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to check presence of data in input buffer, return TRUE if any data are present in buffer
+*
+*---------------------------------------------------------------------------*/
+static uint8_t CheckData485Presence();
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: ProcessInputRSData(processedDataInRS_t *processedRSData)
+*
+* FUNCTION ARGUMENTS:
+*    processedRSData - pointer to struct with RS data processed by program
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to fill input Structure with proper data, depending on data received from RS485 line
+*
+*---------------------------------------------------------------------------*/
+static void ProcessInputRSData(processedDataInRS_t *processedRSData);
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: TimerMinReset()
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to reset Minute counter in Base Module; Reset of this counter is neceserry when we go back from 
+*    menu options, or temperature options to state where we count furnance time or delay time.
+*
+*---------------------------------------------------------------------------*/
+static void TimerMinReset();
+
+static void OnOffRSinfoSend(uint8_t statusSend_bo);
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: SendDisplayPresence()
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Send information to Main Module every 300ms?? to confirm presence of the Panel Module,
+*    in case of panel absence Main Module should be switched off.
+*
+*---------------------------------------------------------------------------*/
+static void SendDisplayPresence();
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: OutputExecute(uint8_t tabOutDsp_au8)
+*
+* FUNCTION ARGUMENTS:
+*    tabOutDsp_au8 - data foe LED display
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function execute every cycle in main, used to set output informations.
+*
+*---------------------------------------------------------------------------*/
+static void OutputExecute(strSaunaParam_t *structWorkingValue, processedDataInRS_t *processedRSData, uint8_t tabOutDsp_au8[]);
+
+static void SendDataByRs();
+
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: SetRegisterUC()
+*
+* FUNCTION ARGUMENTS:
+*    None
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used to set all register for proper work of microcontroller.
+*
+*---------------------------------------------------------------------------*/
+static void SetRegisterUC(void);
+
+/*----------------------------------------------------------------------------
+*
+* FUNCTION NAME: InitDataOnEntry(strSaunaParam_t *structWorkingValue)
+*
+* FUNCTION ARGUMENTS:
+*    structWorkingValue - pointer to structure with sauna parameters
+*
+* RETURN VALUE:
+*    None
+*
+* FUNCTION DESCRIPTION AND RESTRICTIONS:
+*    Function used fill struct with data from EEPROM also set global interrupt and watchdog.
+*
+*---------------------------------------------------------------------------*/
+static void InitDataOnEntry(strSaunaParam_t *structWorkingValue);
 
 #endif
