@@ -3,12 +3,9 @@
 
 /*
 do zrobienia:
-globalny timer do obslugi wszystkich pozostalych timerow 
+globalny timer do obslugi wszystkich pozostalych timerow dodac w przerwaniu od timera
 przeniesc gdzieœ funkcje do odliczania kalibracji temperatury
-zapis do pamieci eeprom
-dodac wysylki po RSIe w odpowiednich miejscach (sprawdziæ czy jeœ³i funkcja przyjmuje makro to nie wyrzuci b³êdu)
 odac resetowanie minut w odpowiednich miejscach (sprawdziæ czy jeœ³i funkcja przyjmuje makro to nie wyrzuci b³êdu)
-histereza zalaczania pieca - poprawic funkcje do obslugi wysylania danych zalacz wylacz piec
 */
 /* static value in main function */
 

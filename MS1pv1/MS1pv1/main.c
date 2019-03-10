@@ -27,8 +27,8 @@ static strSaunaSavedParameter_t structEepromSavedValue EEMEM;
 
 static strLedStatus_t Gv_LedStatus;
 
-volatile uint8_t Gv_switchCounter_bo = FALSE;		/* !< variable set in 50ms timer interrupt to indicate 50ms time gap >! */
-volatile uint8_t Gv_flagInterrupt50ms_bo = FALSE;	/* !< variable set in 20ms timer interrupt to indicate 20ms time gap >! */
+volatile uint8_t Gv_SwitchCounter_bo = FALSE;		/* !< variable set in 50ms timer interrupt to indicate 50ms time gap >! */
+volatile uint8_t Gv_FlagInterrupt50ms_bo = FALSE;	/* !< variable set in 20ms timer interrupt to indicate 20ms time gap >! */
 volatile uint8_t Gv_tabRecDataRS485_au8[10] = {0u};			/* !< table for input RS data >! */
 
 uint8_t Gv_flag50ms_bo;						/* !< flag set every 50ms used to increment static timer in function >!*/
@@ -506,6 +506,7 @@ static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValu
 		/* set default parameter for some working data */
 		fillWorkingStructDuringSwitchingOn(structWorkingValue);
 		
+		ClearAllTimers();
 		/*clear led after return from delay state*/
 		Gv_LedStatus.TempLed_u8 = LED_OFF;
 		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
@@ -873,7 +874,7 @@ static void TimeCounter()
 	}
 	else
 	{
-		/* do nothing */
+		; /* do nothing */
 	}
 	
 	if (TIMER_EVENT_8S == Gv_Timer8s_u8)
@@ -882,7 +883,7 @@ static void TimeCounter()
 	}
 	else
 	{
-		/* do nothing */
+		; /* do nothing */
 	}
 	
 	if (TIMER_EVENT_6S == Gv_Timer6s_u8)
@@ -891,34 +892,34 @@ static void TimeCounter()
 	}
 	else
 	{
-		/* do nothing */
+		; /* do nothing */
 	}
 	
 	if (TIMER_EVENT_3S == Gv_Timer3s_u8)
 	{
-		Gv_Timer3s_u8 == 0u;
+		Gv_Timer3s_u8 = 0u;
 	}
 	else
 	{
-		/* do nothing */
+		; /* do nothing */
 	}
 	
 	if (TIMER_EVENT_2S == Gv_Timer2s_u8)
 	{
-		Gv_Timer2s_u8 == 0u;
+		Gv_Timer2s_u8 = 0u;
 	}
 	else
 	{
-		/* do nothing */
+		; /* do nothing */
 	}
 	
 	if (TIMER_EVENT_1S == Gv_Timer1s_u8)
 	{
-		Gv_Timer1s_u8 == 0u;
+		Gv_Timer1s_u8 = 0u;
 	}
 	else
 	{
-		/* do nothing */
+		; /* do nothing */
 	}
 	
 	if (TIMER_EVENT_300MS == Gv_Timer300ms_u8)
@@ -927,7 +928,7 @@ static void TimeCounter()
 	}
 	else
 	{
-		/* do nothing */
+		; /* do nothing */
 	}
 	
 	if (TIMER_SWITCH_50MS == Gv_Timer50ms_u8)
@@ -936,38 +937,37 @@ static void TimeCounter()
 	}
 	else
 	{
-		/* do nothing */
+		; /* do nothing */
 	}
 	
-	if (TIMER_EVENT_3S > Gv_Timer3sHideMenu_u8)
-	{
-			Gv_Timer3sHideMenu_u8 ++ ;
-	}
-	else
-	{
-		/* do nothing */
-	}
+
 	
-	if (TIMER_EVENT_1S > Gv_CounterLed_u8)
-	{
-		Gv_CounterLed_u8 ++ ;
-	}
-	else
+	if (TIMER_EVENT_1S == Gv_CounterLed_u8)
 	{
 		Gv_CounterLed_u8 = 0u;
 	}
-	
-	
-	if (TRUE == Gv_flagInterrupt50ms_bo)
+	else
 	{
-		Gv_flagInterrupt50ms_bo = FALSE;
+		; /* do nothing */
+	}
+	
+	
+	if (TRUE == Gv_FlagInterrupt50ms_bo)
+	{
+		Gv_FlagInterrupt50ms_bo = FALSE;
 		Gv_Timer10s_u8 ++;
 		Gv_Timer8s_u8 ++;
 		Gv_Timer6s_u8 ++;
 		Gv_Timer2s_u8 ++;
 		Gv_Timer1s_u8 ++;
-		Gv_Timer300ms_u8++;
-		Gv_Timer50ms_u8++;
+		Gv_Timer300ms_u8 ++;
+		Gv_Timer50ms_u8 ++;
+		Gv_CounterLed_u8 ++;
+		
+		if (TIMER_EVENT_3S > Gv_Timer3sHideMenu_u8)
+		{
+			Gv_Timer3sHideMenu_u8 ++ ;
+		}
 	}
 }
 
@@ -1257,6 +1257,7 @@ static void SwEventChoose (uint8_t *switchCounter_bo, uint8_t *swEvent_u8 )
 	if (TIMER_SWITCH_50MS == *switchCounter_bo)
 	{
 		*switchCounter_bo = FALSE;
+		Gv_BuzCounter_u16 = 50u;
 	    if ( SHORT == obslugaPrzyciskuKrotkiego2(0u,PINA,0x01u,15u) )// ON/OFF
 		{
 			*swEvent_u8 = SW_OFF_ON; 
@@ -1281,25 +1282,30 @@ static void SwEventChoose (uint8_t *switchCounter_bo, uint8_t *swEvent_u8 )
 		{
 			*swEvent_u8 = SW_DOWN; 
 		}
-	    else if ( SHORT == obslugaPrzyciskuKrotkiego(6u,PINA,0x10u,15u) )// MENU UKRYTE
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego(6u,PINA,0x10u,30u) )// MENU UKRYTE
 		{
 			*swEvent_u8 = SW_MENU;
+			Gv_BuzCounter_u16 = 100u;
 		}
 	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(7u,PINA,0x04u,150u,100u) )// Menu bardzo szybkie pzewijanie UP
 		{
 			*swEvent_u8 = SW_VERY_FAST_UP;
+			Gv_BuzCounter_u16 = 20u;
 		}
 	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(8u,PINA,0x04u,150u,100u) )// Menu szybkie pzewijanie UP
 	    {
 		    *swEvent_u8 = SW_FAST_UP;
+			Gv_BuzCounter_u16 = 20u;
 	    }
 	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(9u,PINA,0x20u,150u,100u) )// Menu bardzo szybkie pzewijanie DOWN
 		{
 			*swEvent_u8 = SW_VERY_FAST_DOWN;
+			Gv_BuzCounter_u16 = 20u;
 		}
 	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(10u,PINA,0x20u,150u,100u) )// Menu szybkie pzewijanie DOWN
 	    {
 		    *swEvent_u8 = SW_FAST_DOWN;
+			Gv_BuzCounter_u16 = 20u;
 	    }
 	}
 	return;
@@ -1334,7 +1340,7 @@ static void StateMachine(uint8_t event_u8, strSaunaParam_t * structWorkingValue,
 			FanOnStateExecute(event_u8, structWorkingValue, displayOutData_pa);
 			break;
 		case SM_ERROR:
-			ErrorStateExecute(event_u8, processedRSInData , structWorkingValue, displayOutData_pa);
+			ErrorStateExecute(event_u8, processedRSInData, structWorkingValue, displayOutData_pa);
 		break;
 
 	}
@@ -2071,6 +2077,7 @@ static void OutputExecute(strSaunaParam_t *structWorkingValue, processedDataInRS
 	TimerMinReset();
 	DsLedSend(tabOutDsp_au8[0], tabOutDsp_au8[1], tabOutDsp_au8[2], tabOutDsp_au8[3]);
 	LedWorkStatus();
+	BuzzerWork(Gv_BuzCounter_u16, 1u);
 	SendDataByRs();
 }
 
@@ -2329,15 +2336,23 @@ int main(void)
 
 ISR(TIMER0_OVF_vect) //wywolywana co 0.001s
 { 
-    if  (Gv_BuzCounter_u16 > 0u) 
+    static uint8_t counter50SM_u8 = 0u;
+	if  (Gv_BuzCounter_u16 > 0u) 
 	{
 		 Gv_BuzCounter_u16 --;
 	}
-    else 
+	
+	if (50u > counter50SM_u8)
 	{
-		Gv_BuzCounter_u16 = 0u;
+		counter50SM_u8++;	
 	}
-	      
+	else 
+	{
+		Gv_FlagInterrupt50ms_bo = TRUE;
+		counter50SM_u8 = 0u;
+	}
+	
+	Gv_SwitchCounter_bo = TRUE;
 	Gv_SendRS485AllowFlag_u8 = 1u;
    
     TCNT0=194;
