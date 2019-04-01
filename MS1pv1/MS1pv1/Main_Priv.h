@@ -5,42 +5,32 @@
 do zrobienia:
 globalny timer do obslugi wszystkich pozostalych timerow dodac w przerwaniu od timera
 przeniesc gdzieœ funkcje do odliczania kalibracji temperatury
-odac resetowanie minut w odpowiednich miejscach (sprawdziæ czy jeœ³i funkcja przyjmuje makro to nie wyrzuci b³êdu)
+
 */
-/* static value in main function */
-
-
-
-/*==========================*/
-
-/* global variable - start block*/
-
-/* global variable - finish block*/
 
 /*----- macro definition --------- */
-#define TRUE 0xFFu
-#define FALSE 0x00u
-#define INVALID 0xFFu
+#define TRUE	(uint8_t)0xFFu
+#define FALSE	(uint8_t)0x00u
+#define INVALID (uint8_t)0xFFu
 
 
 /*RS data code */
-#define RS_PANEL_PRES	0x01u
-#define RS_CTRL_ON		0x02u
-#define RS_CTRL_OFF		0x03u
-#define RS_LAMP_ON		0x06u
-#define RS_LAMP_OFF		0x07u
-#define RS_FUR_ON		0x09u
-#define RS_FUR_OFF		0x0Au
-#define RS_FAN_ON		0x0Bu
-#define RS_FAN_OFF		0x0Cu
-#define RS_MIN_RES		0x0Du
+#define RS_PANEL_PRES	(uint8_t)0x01u
+#define RS_CTRL_ON		(uint8_t)0x02u
+#define RS_CTRL_OFF		(uint8_t)0x03u
+#define RS_LAMP_ON		(uint8_t)0x06u
+#define RS_LAMP_OFF		(uint8_t)0x07u
+#define RS_FUR_ON		(uint8_t)0x09u
+#define RS_FUR_OFF		(uint8_t)0x0Au
+#define RS_FAN_ON		(uint8_t)0x0Bu
+#define RS_FAN_OFF		(uint8_t)0x0Cu
+#define RS_MIN_RES		(uint8_t)0x0Du
 
 /* maximum, minimum and default values for hidden menu parameters */
-#define TIM_MENU_CHANGE 2000u
 
-#define CALIBRATION_MAX 10
-#define CALIBRATION_MIN -10
-#define CALIBRATION_DEF 0
+#define CALIBRATION_MAX (int8_t)10
+#define CALIBRATION_MIN (int8_t)-10
+#define CALIBRATION_DEF (int8_t)0
 #define WARMING_TIME_MAX_MIN 10u
 #define WARMING_TIME_MAX_MAX 360u
 #define WARMING_TIME_MAX_DEF 240u
@@ -60,9 +50,9 @@ odac resetowanie minut w odpowiednich miejscach (sprawdziæ czy jeœ³i funkcja prz
 /* default values for settings */
 /*#define WARMING_TIME_DEF 240u this should be set for actual value of WARMING_TIME_MAX parameter */ 
 #define TEMPERATURE_HOT_DEF 50u
-#define DELAY_WARMING_TIME_MIN 0u
-#define DELAY_WARMING_TIME_MAX 7200u
-#define DELAY_WARMING_TIME_DEF 0u
+#define DELAY_WARMING_TIME_MIN (int16_t)0u
+#define DELAY_WARMING_TIME_MAX (int16_t)1200u
+#define DELAY_WARMING_TIME_DEF (int16_t)0u
 
 /* value for time event */
 #define TIMER_EVENT_1S		20u		/* !< indicate 1s period >!*/
@@ -78,9 +68,9 @@ odac resetowanie minut w odpowiednich miejscach (sprawdziæ czy jeœ³i funkcja prz
 #define TIMER_SWITCH_50MS	1u		/* !< indicate 50ms period >!*/
 
 /* value for led management*/
-#define LED_OFF 0u
-#define LED_ON 1u
-#define LED_BLINK 2u
+#define LED_OFF		(uint8_t)0u
+#define LED_ON		(uint8_t)1u
+#define LED_BLINK	(uint8_t)2u
 
 /* value for in state */
 #define TIME_TO_OFF 900u  /* !< sec to off controller from in state */
@@ -89,56 +79,39 @@ odac resetowanie minut w odpowiednich miejscach (sprawdziæ czy jeœ³i funkcja prz
 #define POINT_LCD_MARK 0x7Fu
 
 /* value for event_u8 */
-#define SW_OFF_ON 1u
-#define SW_UP 3u
-#define SW_DOWN 4u
-#define SW_FAST_UP 5u
-#define SW_FAST_DOWN 6u
-#define SW_VERY_FAST_UP 7u
-#define SW_VERY_FAST_DOWN 8u
-#define SW_LAMP 9u
-#define SW_FAN 10u
-#define SW_TIMER 11u
-#define SW_MENU 13u
+#define SW_IDLE 			(uint8_t)0u
+#define SW_OFF_ON			(uint8_t)1u
+#define SW_UP				(uint8_t)2u
+#define SW_DOWN				(uint8_t)3u
+#define SW_FAST_UP			(uint8_t)4u
+#define SW_FAST_DOWN		(uint8_t)5u
+#define SW_VERY_FAST_UP		(uint8_t)6u
+#define SW_VERY_FAST_DOWN	(uint8_t)7u
+#define SW_LAMP				(uint8_t)8u
+#define SW_FAN				(uint8_t)9u
+#define SW_TIMER			(uint8_t)10u
+#define SW_MENU				(uint8_t)11u
+
+#define SW_FAST_CHANGE_10			10u		/* !< indicate value change by switch execute >!*/
+#define SW_FAST_CHANGE_60			60u		/* !< indicate value change by switch execute >!*/
 /*-------------------------------*/
 
-#define DISPLSY_SEGMENT_NR		4u  /* used to calculate actual segment nr */
+#define DISPLSY_SEGMENT_NR		(uint8_t)3u  /* used to calculate actual segment nr */
 
-#define CHANGE_MENU_SW			1u
-#define CHANGE_MENU_TIM			2u
+#define CHANGE_MENU_SW			(uint8_t)1u
+#define CHANGE_MENU_TIM			(uint8_t)2u
 
 /* LED display conversion level */
-#define TEMP_LCD_CONV_LEVEL		0u
-#define TIME_LCD_CONV_LEVEL		1u
-#define CALIB_LCD_CONV_LEVEL	2u
-#define ERROR_LCD_LEVEL			3u
+#define CALIB_LCD_CONV_LEVEL	(uint8_t)0u
+#define TEMP_LCD_CONV_LEVEL		(uint8_t)1u
+#define TIME_LCD_CONV_LEVEL		(uint8_t)2u
+#define ERROR_LCD_LEVEL			(uint8_t)3u
 
 /* temperature sensors errors */
-#define SENS_ERROR1		1u
-#define SENS_ERROR2		2u
-/* hidden menu definition */
-#define MAXMEN 45u
-#define MINMEN 40u
-#define MENU_L0_WARM_TIME 40u
-#define MENU_L0_T_MAX 41u
-#define MENU_L0_T_MIN 42u
-#define MENU_L0_FAN_TIME 43u
-#define MENU_L0_T_HIST 44u
-#define MENU_L0_CORR 45u
-#define MENU_L0_DEFAULT 46u
-#define MENU_L0_7 47u
-#define MENU_L1_WARM_TIME 400u
-#define MENU_L1_T_MAX 410u
-#define MENU_L1_T_MIN 420u
-#define MENU_L1_FAN_TIME 430u
-#define MENU_L1_T_HIST 440u
-#define MENU_L1_CALIB 450u
-#define MENU_L1_DEFAULT_ON 460u
-#define MENU_L1_DEFAULT_OFF 460u
-#define MENU_L1_7 470u
+#define SENS_ERROR1		(uint8_t)1u
+#define SENS_ERROR2		(uint8_t)2u
 
 /* -------------TYPE DEFINITIONS ---------------*/
-
 
 /*! \struct to save the processed data from RS485 */
 typedef struct {
@@ -172,10 +145,11 @@ typedef struct {
 	/* parameter saved in EEPROM memory */
 	strSaunaSavedParameter_t HiddenMenuParam;
 	/* parameter not saved at this moment in EEPROM memory */
-	uint16_t	WarmingTime_u16;
-	uint16_t	DelayWarmingTime_u16;
-	uint8_t		TemperatureHot_u8;
-	int8_t		ActualTemperature_s8;		/* !< variable stored temperature readed from sensor and modified by calibration factor>!*/
+	int16_t	WarmingTime_s16;
+	int16_t	DelayWarmingTime_s16;
+	uint8_t	TemperatureHot_u8;
+	int8_t	ActualTemperature_s8;		/* !< variable stored temperature readed from sensor and modified by calibration factor>!*/
+	uint8_t TimerCurrentFanSet_u8;		/* !< variable used to store current fan work time for each power cycle >!*/
 }strSaunaParam_t;
 
 /*! \struct to save execute hidden menu */
@@ -290,7 +264,7 @@ static void SaveToEEPROM(strSaunaParam_t* savedValue);
 
 static void fillWorkingStructDuringSwitchingOn(strSaunaParam_t *structWorkingValue);
 
-static void voidFunction(uint8_t event,strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+static void BackToOffState(uint8_t event,strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
 	
 static void setHistTempFunction(uint8_t event_u8,strSaunaParam_t* structWorkingValue_pstr, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
 	
@@ -306,11 +280,13 @@ static void setTimeFanFunction(uint8_t event_u8,strSaunaParam_t * structWorkingV
 	
 static void setFurnanceWorkTime(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
 	
-static void setFurnanceDelay(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
+static void setFurnanceDelay(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa, stateMachine_t enableForSetState_e);
 	
 static void TempSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
 
 static void OffStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t* displayOutData_pa);
+
+static void ClearDispalyData(uint8_t* displayOutData_pa);
 
 static void InStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, processedDataInRS_t *processedRSInData, uint8_t* displayOutData_pa);
 
@@ -328,13 +304,13 @@ static void FurnanceDelayStateExecute(uint8_t event_u8, strSaunaParam_t * struct
 
 static void TimerSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
 
-static void FanOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue, uint8_t *displayOutData_pa);
+static void FanOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingValue,processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa);
 
 static void ErrorStateExecute(uint8_t event_u8, processedDataInRS_t *processedRSInData, strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa);
 
-static void SwEventChoose (uint8_t *switchCounter_bo, uint8_t *swEvent_u8 );
+static void SwEventChoose (volatile uint8_t *switchCounter_bo, uint8_t *swEvent_u8 );
 
-static void StateMachine(uint8_t event_u8, strSaunaParam_t * structWorkingValue,  processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa, uint8_t menuLevel_u8);
+static void StateMachine(uint8_t event_u8, strSaunaParam_t * structWorkingValue,  processedDataInRS_t *processedRSInData, uint8_t *displayOutData_pa);
 
 static void FurnanceStateMachine(strSaunaParam_t *structWorkingValue, processedDataInRS_t *processedRSInData);
 
@@ -348,7 +324,7 @@ static void fillTabByLcdDataMenu(uint8_t ledDisplayLevel_u8, uint8_t *displayOut
 		
 static void fillLcdDataTab(uint8_t conversionLevel_u8, int16_t valueToConvert_u16, uint8_t *displayOutData_pa);
 
-static void changeMenu(uint8_t event_u8, uint8_t *currentMenuState_u8, menuItem_t *tabHideMenu, strSaunaParam_t *structure_pstr , uint8_t * tab_pu8 );
+static void ChangeMenu(uint8_t event_u8, uint8_t *currentMenuState_u8, menuItem_t *tabHideMenu, strSaunaParam_t *structure_pstr , uint8_t * tab_pu8 );
 
 static void TimeConv(uint16_t time_u16, uint8_t digTime[]);
 
