@@ -22,8 +22,8 @@
 
 /*-----------global variable definition -------------*/
 
-static uint8_t eepromInitDefaultFlag_u8 EEMEM; 
-static strSaunaSavedParameter_t structEepromSavedValue EEMEM;
+static uint8_t eepromInitDefaultFlag_u8 EEMEM;					/* flag indicate set default value in EEPROM memory during first start of the system */
+static strSaunaSavedParameter_t structEepromSavedValue EEMEM;   /* EEPROM struct with main settings for sauna */
 
 static strLedStatus_t Gv_LedStatus;
 
@@ -31,53 +31,49 @@ volatile uint8_t Gv_SwitchCounter_bo = FALSE;		/* !< variable set in 50ms timer 
 volatile uint8_t Gv_FlagInterrupt50ms_bo = FALSE;	/* !< variable set in 20ms timer interrupt to indicate 20ms time gap >! */
 volatile uint8_t Gv_tabRecDataRS485_au8[10] = {0u};	/* !< table for input RS data >! */
 
-uint8_t Gv_flag50ms_bo;						/* !< flag set every 50ms used to increment static timer in function >!*/
-uint8_t Gv_Timer10s_u8	= 0u;				/* !< timer used to count 10s period >!*/
-uint8_t Gv_Timer8s_u8	= 0u;				/* !< timer used to count 8s period >!*/
-uint8_t Gv_Timer6s_u8	= 0u;				/* !< timer used to count 6s period >!*/
-uint8_t Gv_Timer3s_u8	= 0u;				/* !< timer used to count 3s period >!*/
-uint8_t Gv_Timer2s_u8	= 0u;				/* !< timer used to count 2s period >!*/
-uint8_t Gv_Timer1s_u8	= 0u;				/* !< timer used to count 1s period >!*/
-uint8_t Gv_Timer300ms_u8 = 0u;				/* !< timer used to count 300ms period >!*/
-uint8_t Gv_Timer50ms_u8	 = 0u;				/* !< timer used to count 50ms period >!*/
-uint8_t Gv_Timer2sHideMenu_u8 = 0u;			/* !< timer used to count 3s period in hide manu >!*/
-uint8_t Gv_CounterLed_u8 = 0u;				/* ! < counter used to count 500ms period for led >!*/
+static uint8_t Gv_Timer10s_u8	= 0u;				/* !< timer used to count 10s period >!*/
+static uint8_t Gv_Timer8s_u8	= 0u;				/* !< timer used to count 8s period >!*/
+static uint8_t Gv_Timer6s_u8	= 0u;				/* !< timer used to count 6s period >!*/
+static uint8_t Gv_Timer3s_u8	= 0u;				/* !< timer used to count 3s period >!*/
+static uint8_t Gv_Timer2s_u8	= 0u;				/* !< timer used to count 2s period >!*/
+static uint8_t Gv_Timer1s_u8	= 0u;				/* !< timer used to count 1s period >!*/
+static uint8_t Gv_Timer300ms_u8 = 0u;				/* !< timer used to count 300ms period >!*/
+static uint8_t Gv_Timer50ms_u8	 = 0u;				/* !< timer used to count 50ms period >!*/
+static uint8_t Gv_Timer2sHideMenu_u8 = 0u;			/* !< timer used to count 3s period in hide manu >!*/
+static uint8_t Gv_CounterLed_u8 = 0u;				/* ! < counter used to count 500ms period for led >!*/
 
-uint8_t Gv_ExtTimer1min_bo;				/* !< flag used to indicate 1min period >!*/
-uint8_t Gv_StatusTimerReset_bo;			/* !< flag used to reset minute counter data - send to base >!*/
+static uint8_t Gv_StatusTimerReset_bo;				/* !< flag used to reset minute counter data - send to base >!*/
 
-stateLamp_t Gv_LampState_e = LAMP_IDLE;		/* !< variable for remember actual state of Lamp state machine >! */
-stateFan_t Gv_FanState_e = FAN_IDLE;		/* !< variable for remember actual state of Fan state machine >! */
-stateFurnance_t Gv_FurState_e = FUR_IDLE;	/* !< variable for remember actual state of Furnance state machine >! */
-
-//volatile uint16_t timerMenuChange_u16 = 0; /* !< variable for remember actual state of Fan state machine >! */
+static stateLamp_t Gv_LampState_e = LAMP_IDLE;		/* !< variable for remember actual state of Lamp state machine >! */
+static stateFan_t Gv_FanState_e = FAN_IDLE;			/* !< variable for remember actual state of Fan state machine >! */
+static stateFurnance_t Gv_FurState_e = FUR_IDLE;	/* !< variable for remember actual state of Furnance state machine >! */
 
 static stateMachine_t Gv_StateMachine_e = SM_OFF;			/* !< variable for remember actual state of main state machine >! */
 static stateMachine_t Gv_StateMachinePrevState_e = SM_OFF;	/* !< variable for remember previous state of main state machine >! */
 static uint8_t Gv_InitOnEntry_bo = TRUE;					/* !< flag for initialize first entry in every state from main state machine >! */
 
-volatile uint16_t Gv_BuzCounter_u16 = 0u;	/* !< counter for buzzer >! */
+volatile uint16_t Gv_BuzCounter_u16 = 0u;					/* !< counter for buzzer >! */
 
 
 /*--------old variables for RS 485 data handle - do not change------------------*/
 
-volatile unsigned char rsByteSend=0x00;
-volatile unsigned char rsRecByte=0x00;
-volatile int Gv_OutputRSDataPresent_u8=0;
-volatile unsigned char Gv_TabSendDataRS485_au8[10];
-volatile unsigned char Gv_tabRecDataRS485_au8[10];
+volatile uint8_t Gv_RsByteSend_u8 = 0u;
+volatile uint8_t Gv_RsRecByte_u8 = 0u;
+volatile uint8_t Gv_OutputRSDataPresent_u8 = 0u;
+volatile uint8_t Gv_TabSendDataRS485_au8[10];
+volatile uint8_t Gv_tabRecDataRS485_au8[10];
 /* transmission for RS: */
-volatile uint8_t Gv_SendRS485AllowFlag_u8;
-volatile int returnDataInfo=0;
-volatile unsigned char returnData=0;
-volatile int Gv_EnableSend1_u8=1;
-volatile int nrByte=0;
-volatile int Gv_EnableSend2_u8=0;
-volatile unsigned char tabDataRxc[2]={0,0};
-volatile int Gv_SendStepLevel_u8=0;
+volatile uint8_t Gv_SendRS485AllowFlag_u8 = 0u;
+//volatile int returnDataInfo=0;
+volatile uint8_t Gv_ReturnData_u8 = 0u;
+volatile uint8_t Gv_EnableSend1_u8 = 1u;
+volatile uint8_t Gv_NrByte_u8 = 0u;
+volatile uint8_t Gv_EnableSend2_u8 = 0u;
+volatile uint8_t Gv_TabDataRxc_au8[2]={0u,0u};
+volatile int Gv_SendStepLevel_u8=0u;
 /* protection for  rs */
-volatile uint8_t Gv_SendStepCounter_u8;
-volatile uint8_t presM1=0;
+volatile uint8_t Gv_SendStepCounter_u8 = 0u;
+volatile uint8_t Gv_PresM1_u8=0;
 
 /* finish block for old variable definition */
 
@@ -109,6 +105,8 @@ static void saveDefaultParameterToEeprom(strSaunaSavedParameter_t *structEepromP
     };
 	
 	eeprom_write_block(&structDefParameter,structEepromParam,sizeof(structDefParameter));
+	
+	return;
 }
 
 /*----------------------------------------------------------------------------
@@ -135,6 +133,7 @@ static void initEepromStruct(strSaunaParam_t *structWorkingValue, strSaunaSavedP
 		eeprom_write_byte(eepromAddr_u8,0u);
 	}
 	fillWorkingStructDuringStart(structWorkingValue, structEepromParam);
+	return;
 }
 
 /*----------------------------------------------------------------------------
@@ -156,6 +155,7 @@ static void fillWorkingStructDuringStart(strSaunaParam_t *structWorkingValue, st
 {
 	eeprom_read_block(&(structWorkingValue->HiddenMenuParam),structEepromParam,sizeof(*structEepromParam));
 	fillWorkingStructDuringSwitchingOn(structWorkingValue);
+	return;
 	
 }
 
@@ -177,6 +177,7 @@ static void fillWorkingStructDuringStart(strSaunaParam_t *structWorkingValue, st
 static void SaveToEEPROM(strSaunaParam_t* savedValue)
 {
 	eeprom_write_block(&(savedValue->HiddenMenuParam),&structEepromSavedValue,sizeof(structEepromSavedValue));
+	return;
 }
 
 /*----------------------------------------------------------------------------
@@ -199,6 +200,8 @@ static void fillWorkingStructDuringSwitchingOn(strSaunaParam_t *structWorkingVal
 	structWorkingValue->DelayWarmingTime_s16 = DELAY_WARMING_TIME_DEF;
 	structWorkingValue->WarmingTime_s16 = structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16;
 	structWorkingValue->TimerCurrentFanSet_u8 = structWorkingValue->HiddenMenuParam.TimerFanSet_u8;
+	
+	return;
 }
 	
 /*----------------------------------------------------------------------------
@@ -253,16 +256,26 @@ static void BackToOffState(uint8_t event_u8,strSaunaParam_t *structWorkingValue,
 static void setHistTempFunction(uint8_t event_u8,strSaunaParam_t *structWorkingValue_pstr, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
 {
 		
-		if(event_u8==SW_UP)
-			{(structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8)++;}
-		if(event_u8==SW_DOWN)
-			{(structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8)--;}
+		if(SW_UP == event_u8)
+		{
+			(structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8)++;
+		}
+		if(SW_DOWN == event_u8)
+		{
+			(structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8)--;
+		}
 		if((structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8) > HIST_TEMP_MAX)
-			{structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8=HIST_TEMP_MIN;}
+		{
+			structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8 = HIST_TEMP_MIN;
+		}
 		if((structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8) < HIST_TEMP_MIN)
-			{structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8=HIST_TEMP_MAX;}
+		{
+			structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8 = HIST_TEMP_MAX;
+		}
 		
 		fillLcdDataTab(TEMP_LCD_CONV_LEVEL,(int16_t)structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8, displayOutData_pa);
+		
+		return;
 }
 
 /*----------------------------------------------------------------------------
@@ -285,16 +298,26 @@ static void setHistTempFunction(uint8_t event_u8,strSaunaParam_t *structWorkingV
 static void setCalibrationFunction(uint8_t event_u8, strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
 {
 		
-		if(event_u8==SW_UP)
-			{(structWorkingValue->HiddenMenuParam.Calibration_s8)++;}
-		if(event_u8==SW_DOWN)
-			{(structWorkingValue->HiddenMenuParam.Calibration_s8)--;}
+		if(SW_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.Calibration_s8)++;
+		}
+		if(SW_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.Calibration_s8)--;
+		}
 		if((structWorkingValue->HiddenMenuParam.Calibration_s8) > CALIBRATION_MAX)
-			{structWorkingValue->HiddenMenuParam.Calibration_s8=CALIBRATION_MIN;}
+		{
+			structWorkingValue->HiddenMenuParam.Calibration_s8 = CALIBRATION_MIN;
+		}
 		if((structWorkingValue->HiddenMenuParam.Calibration_s8) < CALIBRATION_MIN)
-			{structWorkingValue->HiddenMenuParam.Calibration_s8=CALIBRATION_MAX;}
+		{
+			structWorkingValue->HiddenMenuParam.Calibration_s8 = CALIBRATION_MAX;
+		}
 		
 		fillLcdDataTab(CALIB_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.Calibration_s8, displayOutData_pa);
+		
+		return;
 }
 
 /*----------------------------------------------------------------------------
@@ -316,24 +339,42 @@ static void setCalibrationFunction(uint8_t event_u8, strSaunaParam_t *structWork
 *---------------------------------------------------------------------------*/
 static void setMaxWorkingTimerFunction(uint8_t event_u8, strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
 {
-		if(event_u8==SW_UP)
-			{(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)++;}
-		if(event_u8==SW_DOWN)
-			{(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)--;}
-		if(event_u8==SW_FAST_UP)
-			{(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)+=SW_FAST_CHANGE_10;}
-		if(event_u8==SW_FAST_DOWN)
-			{(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)-=SW_FAST_CHANGE_10;}
-		if(event_u8==SW_VERY_FAST_UP)
-			{(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)+=60;}
-		if(event_u8==SW_VERY_FAST_DOWN)
-			{(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)-=60;}
+		if(SW_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)++;
+		}
+		if(SW_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)--;
+		}
+		if(SW_FAST_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) += SW_FAST_CHANGE_10;
+		}
+		if(SW_FAST_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) -= SW_FAST_CHANGE_10;
+		}
+		if(SW_VERY_FAST_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) += SW_FAST_CHANGE_60;
+		}
+		if(SW_VERY_FAST_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) -= SW_FAST_CHANGE_60;
+		}
 		if((structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) > WARMING_TIME_MAX_MAX)
-			{structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16 = WARMING_TIME_MAX_MIN;}
+		{
+			structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16 = WARMING_TIME_MAX_MIN;
+		}
 		if((structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) < WARMING_TIME_MAX_MIN)
-			{structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16 = WARMING_TIME_MAX_MAX;}	
+		{
+			structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16 = WARMING_TIME_MAX_MAX;
+		}	
 		
 		fillLcdDataTab(TIME_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16, displayOutData_pa);
+		
+		return;
 }
 
 /*----------------------------------------------------------------------------
@@ -355,24 +396,42 @@ static void setMaxWorkingTimerFunction(uint8_t event_u8, strSaunaParam_t *struct
 *---------------------------------------------------------------------------*/
 static void setTempMaxFunction(uint8_t event_u8,strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
 {	
-		if(event_u8==SW_UP)
-			{(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)++;}
-		if(event_u8==SW_DOWN)
-			{(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)--;}
-		if(event_u8==SW_FAST_UP)
-			{(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)++;}
-		if(event_u8==SW_FAST_DOWN)
-			{(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)--;}
-		if(event_u8==SW_VERY_FAST_UP)
-			{(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)+=SW_FAST_CHANGE_10;}
-		if(event_u8==SW_VERY_FAST_DOWN)
-			{(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)-=SW_FAST_CHANGE_10;}
+		if(SW_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)++;
+		}
+		if(SW_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)--;
+		}
+		if(SW_FAST_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)++;
+		}
+		if(SW_FAST_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8)--;
+		}
+		if(SW_VERY_FAST_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8) += SW_FAST_CHANGE_10;
+		}
+		if(SW_VERY_FAST_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8) -= SW_FAST_CHANGE_10;
+		}
 		if((structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8) > TEMPERATURE_HOTMAX_MAX)
-			{structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8 = TEMPERATURE_HOTMAX_MIN;}
+		{
+			structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8 = TEMPERATURE_HOTMAX_MIN;
+		}
 		if((structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8) < TEMPERATURE_HOTMAX_MIN)
-			{structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8 = TEMPERATURE_HOTMAX_MAX;}	
+		{
+			structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8 = TEMPERATURE_HOTMAX_MAX;
+		}	
 		
 		fillLcdDataTab(TEMP_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.TemperatureHotMax_u8, displayOutData_pa);
+		
+		return;
 }
 
 /*----------------------------------------------------------------------------
@@ -394,40 +453,42 @@ static void setTempMaxFunction(uint8_t event_u8,strSaunaParam_t *structWorkingVa
 *---------------------------------------------------------------------------*/
 static void setTempMinFunction(uint8_t event_u8,strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
 {	
-	if(event_u8==SW_UP)
+	if(SW_UP == event_u8)
 	{
 		(structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8)++;
 	}
-	if(event_u8==SW_DOWN)
+	if(SW_DOWN == event_u8)
 	{
 		(structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8)--;
 	}
-	if(event_u8==SW_FAST_UP)
+	if(SW_FAST_UP == event_u8)
 	{
 		(structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8)++;
 	}
-	if(event_u8==SW_FAST_DOWN)
+	if(SW_FAST_DOWN == event_u8)
 	{
 		(structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8)--;
 	}
-	if(event_u8==SW_VERY_FAST_UP)
+	if(SW_VERY_FAST_UP == event_u8)
 	{
-		(structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8)+=SW_FAST_CHANGE_10;
+		(structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8) += SW_FAST_CHANGE_10;
 	}
-	if(event_u8==SW_VERY_FAST_DOWN)
+	if(SW_VERY_FAST_DOWN == event_u8)
 	{
-		(structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8)-=SW_FAST_CHANGE_10;
+		(structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8) -= SW_FAST_CHANGE_10;
 	}
 	if((structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8) > TEMPERATURE_HOTMIN_MAX )
 	{
-		structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8=TEMPERATURE_HOTMIN_MIN;
+		structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8 = TEMPERATURE_HOTMIN_MIN;
 	}
 	if((structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8) < TEMPERATURE_HOTMIN_MIN )
 	{
-		structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8=TEMPERATURE_HOTMIN_MAX;
+		structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8 = TEMPERATURE_HOTMIN_MAX;
 	}	
 		
-		fillLcdDataTab(TEMP_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8, displayOutData_pa);
+	fillLcdDataTab(TEMP_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.TemperatureHotMin_u8, displayOutData_pa);
+	
+	return;
 }
 
 
@@ -450,24 +511,42 @@ static void setTempMinFunction(uint8_t event_u8,strSaunaParam_t *structWorkingVa
 *---------------------------------------------------------------------------*/
 static void setTimeFanFunction(uint8_t event_u8,strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
 {
-		if(event_u8==SW_UP)
-			{(structWorkingValue->HiddenMenuParam.TimerFanSet_u8)++;}
-		if(event_u8==SW_DOWN)
-			{(structWorkingValue->HiddenMenuParam.TimerFanSet_u8)--;}
-		if(event_u8==SW_FAST_UP)
-			{(structWorkingValue->HiddenMenuParam.TimerFanSet_u8)++;}
-		if(event_u8==SW_FAST_DOWN)
-			{(structWorkingValue->HiddenMenuParam.TimerFanSet_u8)--;}
-		if(event_u8==SW_VERY_FAST_UP)
-			{(structWorkingValue->HiddenMenuParam.TimerFanSet_u8) += SW_FAST_CHANGE_10;}
-		if(event_u8==SW_VERY_FAST_DOWN)
-			{(structWorkingValue->HiddenMenuParam.TimerFanSet_u8) -= SW_FAST_CHANGE_10;}
-		if(structWorkingValue->HiddenMenuParam.TimerFanSet_u8>TIMER_FAN_MAX)
-			{structWorkingValue->HiddenMenuParam.TimerFanSet_u8=TIMER_FAN_MIN;}
-		if(structWorkingValue->HiddenMenuParam.TimerFanSet_u8<TIMER_FAN_MIN)
-			{structWorkingValue->HiddenMenuParam.TimerFanSet_u8=TIMER_FAN_MAX;}
+		if(SW_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TimerFanSet_u8)++;
+		}
+		if(SW_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TimerFanSet_u8)--;
+		}
+		if(SW_FAST_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TimerFanSet_u8)++;
+		}
+		if(SW_FAST_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TimerFanSet_u8)--;
+		}
+		if(SW_VERY_FAST_UP == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TimerFanSet_u8) += SW_FAST_CHANGE_10;
+		}
+		if(SW_VERY_FAST_DOWN == event_u8)
+		{
+			(structWorkingValue->HiddenMenuParam.TimerFanSet_u8) -= SW_FAST_CHANGE_10;
+		}
+		if(structWorkingValue->HiddenMenuParam.TimerFanSet_u8 > TIMER_FAN_MAX)
+		{
+			structWorkingValue->HiddenMenuParam.TimerFanSet_u8 = TIMER_FAN_MIN;
+		}
+		if(structWorkingValue->HiddenMenuParam.TimerFanSet_u8 < TIMER_FAN_MIN)
+		{
+			structWorkingValue->HiddenMenuParam.TimerFanSet_u8 = TIMER_FAN_MAX;
+		}
 		
 		fillLcdDataTab(TIME_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.TimerFanSet_u8, displayOutData_pa);
+		
+		return;
 }	
 
 /*----------------------------------------------------------------------------
@@ -478,13 +557,13 @@ static void setTimeFanFunction(uint8_t event_u8,strSaunaParam_t *structWorkingVa
 *    event_u8 - value indicate for switch event
 *    structWorkingValue - struct with menu settings for sauna
 *    displayOutData_pa - array with data for Led display
-*    menuLevel_u8 - hide menu array of structs level
+*    menuLevel_u8 - hide menu array of structures level
 *
 * RETURN VALUE:
 *    None
 *
 * FUNCTION DESCRIPTION AND RESTRICTIONS:
-*    Function used to set display hidden menu level based on array of structs level.
+*    Function used to set display hidden menu level based on array of structures level.
 *
 *---------------------------------------------------------------------------*/
 static void showHideMenuLevel(uint8_t event_u8, strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
@@ -493,22 +572,22 @@ static void showHideMenuLevel(uint8_t event_u8, strSaunaParam_t *structWorkingVa
 		switch (menuLevel_u8)
 		{
 			case 1:
-				displayMenuLevel_u8=1;
+				displayMenuLevel_u8=1u;
 			break;
 			case 3:
-				displayMenuLevel_u8=2;
+				displayMenuLevel_u8=2u;
 			break;
 			case 5:
-				displayMenuLevel_u8=3;
+				displayMenuLevel_u8=3u;
 			break;
 			case 7:
-				displayMenuLevel_u8=4;
+				displayMenuLevel_u8=4u;
 			break;
 			case 9:
-				displayMenuLevel_u8=5;
+				displayMenuLevel_u8=5u;
 			break;
 			case 11:
-				displayMenuLevel_u8=6;
+				displayMenuLevel_u8=6u;
 			break;
 		}
 		fillTabByLcdDataMenu(displayMenuLevel_u8, displayOutData_pa);
@@ -608,19 +687,19 @@ static void setFurnanceDelay(uint8_t event_u8, strSaunaParam_t *structWorkingVal
 		{
 			; /* do not set delay timer if we are in heat state and go to delay settings */
 		}
-		else if((SW_UP == event_u8) && (600u>structWorkingValue->DelayWarmingTime_s16))
+		else if((SW_UP == event_u8) && (TIME_DELAY_10H >structWorkingValue->DelayWarmingTime_s16))
 		{
 			(structWorkingValue->DelayWarmingTime_s16)++;
 		}
-		else if((SW_DOWN == event_u8) && (600u >= structWorkingValue->DelayWarmingTime_s16))
+		else if((SW_DOWN == event_u8) && (TIME_DELAY_10H >= structWorkingValue->DelayWarmingTime_s16))
 		{
 			(structWorkingValue->DelayWarmingTime_s16)--;
 		}
-		else if((SW_UP == event_u8) && (600u <= structWorkingValue->DelayWarmingTime_s16) )
+		else if((SW_UP == event_u8) && (TIME_DELAY_10H <= structWorkingValue->DelayWarmingTime_s16) )
 		{
 			(structWorkingValue->DelayWarmingTime_s16) += SW_FAST_CHANGE_10;
 		}
-		else if((SW_DOWN == event_u8) && (600u < structWorkingValue->DelayWarmingTime_s16))
+		else if((SW_DOWN == event_u8) && (TIME_DELAY_10H < structWorkingValue->DelayWarmingTime_s16))
 		{
 			(structWorkingValue->DelayWarmingTime_s16)-=SW_FAST_CHANGE_10;
 		}
@@ -1153,7 +1232,7 @@ static void HideMenuStateExecute(uint8_t event_u8, strSaunaParam_t *structWorkin
 *    None
 *
 * FUNCTION DESCRIPTION AND RESTRICTIONS:
-*    Function to execute behavior of sauna in case of furnance normal working phase.
+*    Function to execute behavior of sauna in case of furnace normal working phase.
 *
 *---------------------------------------------------------------------------*/
 
@@ -1250,7 +1329,7 @@ static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWor
 		; /* do nothing */
 	}
 	
-	//----------histereza zalaczania i wylaczania pieca
+	/* histerese for switching on and off furnace */
 /*
 	if (   (processedRSInData->countedTemperature_s16 <= (structWorkingValue->TemperatureHot_u8 - structWorkingValue->HiddenMenuParam.HistTemp_u8))
 		&& (FUR_AUTO_ON_EXEC != Gv_FurState_e)
@@ -1322,35 +1401,35 @@ static void addAnimationToLedDisplay(uint8_t *displayOutData_pa)
 {
 	if (Gv_Timer10s_u8>TIMER_EVENT_7S)
 	{ 
-		displayOutData_pa[0]= DSL3;
+		displayOutData_pa[0]= (uint8_t)DSL3;
 	}
 	else if (Gv_Timer10s_u8>TIMER_EVENT_6S)
 	{ 
-		displayOutData_pa[0]= DSL2;
+		displayOutData_pa[0]= (uint8_t)DSL2;
 	}
 	else if (Gv_Timer10s_u8>TIMER_EVENT_5S)
 	{ 
-		displayOutData_pa[0] = DSL1;
+		displayOutData_pa[0] = (uint8_t)DSL1;
 	}
 	else if (Gv_Timer10s_u8>TIMER_EVENT_4S)
 	{ 
-		displayOutData_pa[0] = SPCJ;
+		displayOutData_pa[0] = (uint8_t)SPCJ;
 	}
 	else if (Gv_Timer10s_u8>TIMER_EVENT_3S)
 	{ 
-		displayOutData_pa[0]= DSL3;
+		displayOutData_pa[0]= (uint8_t)DSL3;
 	}
 	else if (Gv_Timer10s_u8>TIMER_EVENT_2S)
 	{ 
-		displayOutData_pa[0]= DSL2;
+		displayOutData_pa[0]= (uint8_t)DSL2;
 	}
 	else if (Gv_Timer10s_u8>TIMER_EVENT_1S)
 	{ 
-		displayOutData_pa[0]= DSL1;
+		displayOutData_pa[0]= (uint8_t)DSL1;
 	}
 	else
 	{ 
-		displayOutData_pa[0]= SPCJ;
+		displayOutData_pa[0]= (uint8_t)SPCJ;
 	}	
 		
 	return ;
@@ -1514,7 +1593,7 @@ static void TimeCounter()
 *    None
 *
 * FUNCTION DESCRIPTION AND RESTRICTIONS:
-*    Function to execute behavior of sauna in case of delay of furnance switching on phase.
+*    Function to execute behavior of sauna in case of delay of furnace switching on phase.
 *
 *---------------------------------------------------------------------------*/
 
@@ -1858,8 +1937,6 @@ static void ErrorStateExecute(uint8_t event_u8, processedDataInRS_t *processedRS
 		
 		/* clear initOnEntry flag - initialize was done*/
 		Gv_InitOnEntry_bo = FALSE;
-			
-		//wyslanie komendy do wylaczenia pieca 
 	}
 		
 		
@@ -1939,22 +2016,22 @@ static void SwEventChoose (volatile uint8_t *switchCounter_bo, uint8_t *swEvent_
 			*swEvent_u8 = SW_MENU;
 			Gv_BuzCounter_u16 = 100u;
 		}
-	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(7u,PINA,0x04u,150u,100u) )// Menu bardzo szybkie pzewijanie UP
+	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(7u,PINA,0x04u,150u,100u) )// very fast UP
 		{
 			*swEvent_u8 = SW_VERY_FAST_UP;
 			Gv_BuzCounter_u16 = 20u;
 		}
-	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(8u,PINA,0x04u,150u,100u) )// Menu szybkie pzewijanie UP
+	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(8u,PINA,0x04u,150u,100u) )// fast UP
 	    {
 		    *swEvent_u8 = SW_FAST_UP;
 			Gv_BuzCounter_u16 = 20u;
 	    }
-	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(9u,PINA,0x20u,150u,100u) )// Menu bardzo szybkie pzewijanie DOWN
+	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(9u,PINA,0x20u,150u,100u) )// very fast DOWN
 		{
 			*swEvent_u8 = SW_VERY_FAST_DOWN;
 			Gv_BuzCounter_u16 = 20u;
 		}
-	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(10u,PINA,0x20u,150u,100u) )// Menu szybkie pzewijanie DOWN
+	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(10u,PINA,0x20u,150u,100u) )// fast DOWN
 	    {
 		    *swEvent_u8 = SW_FAST_DOWN;
 			Gv_BuzCounter_u16 = 20u;
@@ -2746,7 +2823,7 @@ static void SensorTemperatureCalibration(strSaunaParam_t *structWorkingValue, in
 *    None
 *
 * RETURN VALUE:
-*    retVal_bo - TRUE if data are present in buffer, FALSE if no dta in buffer
+*    retVal_bo - TRUE if data are present in buffer, FALSE if no data in buffer
 *
 * FUNCTION DESCRIPTION AND RESTRICTIONS:
 *    Function used to check presence of data in input buffer, return TRUE if any data are present in buffer
@@ -3043,27 +3120,27 @@ static void SendDataByRs()
 /*--------old concept for sending data by RS 485- do not change------------------*/
 	if(Gv_SendRS485AllowFlag_u8==1)
 	{
-		//zabezpieczenie dla RS485 konieczne w kilku miejscach programu
+		/* protection for RS485 - it is needed in a few places in code ??? */
 		if (!(PIND & (1<<PD3)))
 		{
-			nrByte=0;Gv_EnableSend2_u8=0;
+			Gv_NrByte_u8=0;Gv_EnableSend2_u8=0;
 		}
 		if (!(PIND & (1<<PD2)))
 		{
 			Gv_EnableSend1_u8=0; Gv_SendStepLevel_u8=0; Gv_SendStepCounter_u8=0;
 		}
-		//zabezpieczenie dla RS485 zabezpieczajace przed ustawieniem 1 z obu stron
+		/* protection for RS485 - it preserve by set 1 from both sides */
 		if (!(Gv_SendStepLevel_u8==0))
 		{
-			presM1++;
+			Gv_PresM1_u8++;
 		}
 		else 
 		{
-			presM1=0;
+			Gv_PresM1_u8=0;
 		}
-		if (presM1==15)
+		if (Gv_PresM1_u8==15)
 		{
-			Gv_SendStepLevel_u8=0; presM1=0; Gv_SendStepCounter_u8=0; PORTD &= ~(1<<PD2);
+			Gv_SendStepLevel_u8=0; Gv_PresM1_u8=0; Gv_SendStepCounter_u8=0; PORTD &= ~(1<<PD2);
 		}
 		///////////////////////////////////////RS 10 5 16//////////////////////////////////////
 			 
@@ -3078,14 +3155,14 @@ static void SendDataByRs()
 		{
 			Gv_OutputRSDataPresent_u8 = 0u;
 		}
-		if ((!(PIND & (1<<PD3))) && Gv_OutputRSDataPresent_u8==1) //jesli wykryto zero z przeciwnej strony i mamy cos do wyslania
+		if ((!(PIND & (1<<PD3))) && Gv_OutputRSDataPresent_u8==1) /* if 0 detect from opposite site and there is data to send in buffer */
 		{ 
 			if (Gv_SendStepLevel_u8==0 )
 			{
-				PORTD |= (1<<PD2); //ustawienie nozki na 1 swiadczace o wysylaniu sekwencji danych przez mastera
+				PORTD |= (1<<PD2); /* set pin for 1 which tell us about sending data by Master device */
 				/*_delay_us(5);*/
 				USART_SendByteM(Gv_TabSendDataRS485_au8[9]);
-				Gv_SendStepLevel_u8=1;}//wysylka danych
+				Gv_SendStepLevel_u8=1;}/* data sending */
 			else if (Gv_SendStepLevel_u8==1)
 			{
 				USART_SendByteM(Gv_TabSendDataRS485_au8[9]);
@@ -3095,15 +3172,15 @@ static void SendDataByRs()
 			{
 				Gv_SendStepCounter_u8++;
 				//if (returnData==0xFF && enableSend1==1){enableSend1=0;RsShiftTab(tabDataRS); sendStep=0;stepS=0;
-				if (returnData==Gv_TabSendDataRS485_au8[9] && Gv_EnableSend1_u8==1)
+				if (Gv_ReturnData_u8==Gv_TabSendDataRS485_au8[9] && Gv_EnableSend1_u8==1)
 				{
-					Gv_EnableSend1_u8=0;RsShiftTab(Gv_TabSendDataRS485_au8); Gv_SendStepLevel_u8=0;Gv_SendStepCounter_u8=0;presM1=0;
+					Gv_EnableSend1_u8=0;RsShiftTab(Gv_TabSendDataRS485_au8); Gv_SendStepLevel_u8=0;Gv_SendStepCounter_u8=0;Gv_PresM1_u8=0;
 					_delay_us(10);
 					PORTD &= ~(1<<PD2);
 				}
 				else if (/*returnData==0x00 &&*/ Gv_EnableSend1_u8==1)
 				{
-					Gv_EnableSend1_u8=0;Gv_SendStepLevel_u8=0;Gv_SendStepCounter_u8=0;presM1=0;
+					Gv_EnableSend1_u8=0;Gv_SendStepLevel_u8=0;Gv_SendStepCounter_u8=0;Gv_PresM1_u8=0;
 					_delay_us(10);
 					PORTD &= ~(1<<PD2);
 				}
@@ -3114,7 +3191,7 @@ static void SendDataByRs()
 					//nrByte=0;
 					PORTD &= ~(1<<PD2);
 					Gv_SendStepCounter_u8=0;
-					presM1=0;
+					Gv_PresM1_u8=0;
 				}
 			}
 		}
@@ -3123,11 +3200,11 @@ static void SendDataByRs()
 		// if((PIND & (1<<PD3)) && enableSend2==1){_delay_us(100);USART_SendByteM(0xFF);enableSend2=0;nrByte=0;}
 		if((PIND & (1<<PD3)) && Gv_EnableSend2_u8==1)
 		{
-			_delay_us(10);USART_SendByteM(tabDataRxc[0]);Gv_EnableSend2_u8=0;nrByte=0;
+			_delay_us(10);USART_SendByteM(Gv_TabDataRxc_au8[0]);Gv_EnableSend2_u8=0;Gv_NrByte_u8=0;
 		}
 		if((PIND & (1<<PD3)) && Gv_EnableSend2_u8==2)
 		{
-			_delay_us(10);USART_SendByteM(0x00);Gv_EnableSend2_u8=0;nrByte=0;
+			_delay_us(10);USART_SendByteM(0x00);Gv_EnableSend2_u8=0;Gv_NrByte_u8=0;
 		}
 			 
 		Gv_SendRS485AllowFlag_u8=0;
@@ -3327,28 +3404,28 @@ ISR(TIMER2_OVF_vect) //wywolywana co 0.001s
 
 ISR (USART_RXC_vect){	
 	/*--------old concept for receiving data by RS 485 - do not change------------------*/
-	static unsigned char emptyRxc;	
-	if(!(PIND & (1<<PD3)) && Gv_SendStepLevel_u8==2)//jesli zero z przeciwnej strony i master jest w trybie oczekiwania na odpowiedz -  master wysyla bajt
+	static uint8_t emptyRxc_u8;	/* for get data from  uSART buffer */
+	if(!(PIND & (1<<PD3)) && Gv_SendStepLevel_u8==2)/* if from base side detect 0 and  Master wait for response for reply - master send byte */
 	{
-		returnData = UDR;// USART_Receive();
+		Gv_ReturnData_u8 = UDR;// USART_Receive();
 		Gv_EnableSend1_u8=1;
 	}
-	else if ((PIND & (1<<PD3)) && Gv_SendStepLevel_u8==0)//jesli wykrylo 1 z przeciwnej strony a funkcja od wysy³ania ma krok ustawiony na 0(na pewno se zakonczyla)
+	else if ((PIND & (1<<PD3)) && Gv_SendStepLevel_u8==0) /*if from base side detect 0 and  function responsible for sending has flag set for 0 (sending for sure has finished) */
 	{
-		if (nrByte==0)
+		if (Gv_NrByte_u8==0)
 		{
-			tabDataRxc[0] = UDR;//USART_Receive();
-			nrByte=1;
+			Gv_TabDataRxc_au8[0] = UDR;//USART_Receive();
+			Gv_NrByte_u8=1;
 		}
-		else if (nrByte==1)
+		else if (Gv_NrByte_u8==1)
 		{
-			tabDataRxc[1] = UDR;//USART_Receive();
-			nrByte=0;
-			if (tabDataRxc[0]==tabDataRxc[1] )
+			Gv_TabDataRxc_au8[1] = UDR;//USART_Receive();
+			Gv_NrByte_u8=0;
+			if (Gv_TabDataRxc_au8[0]==Gv_TabDataRxc_au8[1] )
 			{
-				RsDataTabRec(tabDataRxc[0],Gv_tabRecDataRS485_au8);Gv_EnableSend2_u8=1; 
+				RsDataTabRec(Gv_TabDataRxc_au8[0],Gv_tabRecDataRS485_au8);Gv_EnableSend2_u8=1; 
 			}
-			if (!(tabDataRxc[0]==tabDataRxc[1]))
+			if (!(Gv_TabDataRxc_au8[0]==Gv_TabDataRxc_au8[1]))
 			{
 				Gv_EnableSend2_u8=2; 
 			}
@@ -3356,7 +3433,7 @@ ISR (USART_RXC_vect){
 	}
 	else 
 	{
-		emptyRxc=UDR;/*USART_Receive();*/
+		emptyRxc_u8 = UDR;/*USART_Receive();*/
 	}
 	/*--------end of old concept for receiving data ------------------*/
 }
