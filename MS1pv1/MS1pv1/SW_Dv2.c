@@ -3,11 +3,11 @@
 #include "MotorFunctions.h"
 #include "SPI.h"
 
-int obslugaPrzycisku(/*int size, */int NrSW, int SW, int Pozition){	
+uint8_t obslugaPrzycisku(/*int size, */int NrSW, int SW, int Pozition){	
 
 	static int tab1[tabSize];
 	static int countSwitch[tabSize];
-
+	uint8_t status_u8 = IDLE;
 	if (!(SW & Pozition))
 	{
 	countSwitch[NrSW]++;
@@ -31,13 +31,13 @@ int obslugaPrzycisku(/*int size, */int NrSW, int SW, int Pozition){
 			if(countSwitch[NrSW]==1000)
 			{
 				tab1[NrSW]=repeatSW;
-				return REPEAT;
+				status_u8 = REPEAT;
 			}
 			break;
 
 			case repeatSW:
 				tab1[NrSW]=repeatSW;
-				return REPEAT;
+				status_u8 = REPEAT;
 			break;
 		}
 	}
@@ -45,51 +45,54 @@ int obslugaPrzycisku(/*int size, */int NrSW, int SW, int Pozition){
 	{	
 		tab1[NrSW]=idleSW;
 		countSwitch[NrSW]=0;
-		return SHORT;
+		status_u8 = SHORT;
 	}
 
 	else if (tab1[NrSW]==longSW)
 	{
 		tab1[NrSW]=idleSW;
 		countSwitch[NrSW]=0;
-		return LONG;
+		status_u8 = LONG;
 	}
 
 	else
 	{	
 		tab1[NrSW]=idleSW;
 		countSwitch[NrSW]=0;
-		return IDLE;
+		status_u8 = IDLE;
 	}
 	
-	return IDLE;
+	return status_u8;
 
 }
 
 //obsluga krotkich przycisniec
 //funkcja wyrzuca informacje o nacisnieciu przycisku przez caly okres jego przyciskania
-int obslugaPrzyciskuKrotkiego(int NrSW, int SW, int Pozition, int Rep){	
+uint8_t obslugaPrzyciskuKrotkiego(int NrSW, int SW, int Pozition, int Rep){	
 
 //	static int tab_opk[tabSize_opk];
 	static long int countSwitch_opk[tabSize_opk];
-
+	uint8_t status_u8 = IDLE;
 	if (!(SW & Pozition))
-	{
-		
+	{		
 		if(countSwitch_opk[NrSW]>Rep)
-			{
+		{
 			//	countSwitch_opk[NrSW]=0;
-				return SHORT;
-			}else {countSwitch_opk[NrSW]++;}
+			status_u8 = SHORT;
+		}
+		else 
+		{
+			countSwitch_opk[NrSW]++;
+		}
 
 	}
 	else
 	{	
 		countSwitch_opk[NrSW]=0;
-		return IDLE;
+		status_u8 = IDLE;
 	}
 	
-	return IDLE;
+	return status_u8;
 
 }
 /*funkcja tylko raz wyrzuca informacje o nacisnieciu przycisku
@@ -104,8 +107,8 @@ przy czym wartosc SHORT jest zwracana tylko raz
 Nale¿y ustaliæ wartoœc makra tabSize_opk na tak¹ ile jest obs³ugiwanych przycisków
 funkcjê wywo³ujemy w przerwaniu i pobieramy jej wartosc przyrownujac do zmiennej globalnej 
 */
-int obslugaPrzyciskuKrotkiego2(int NrSW, int SW, int Pozition, int Rep){
-	int returnM=0;
+uint8_t obslugaPrzyciskuKrotkiego2(int NrSW, int SW, int Pozition, int Rep){
+	uint8_t returnM=0;
 	static long int countSwitch_opk[tabSize_opk];
 	static int swMark[tabSize_opk];
 	if (!(SW & Pozition))
@@ -116,9 +119,12 @@ int obslugaPrzyciskuKrotkiego2(int NrSW, int SW, int Pozition, int Rep){
 			swMark[NrSW]=1; //tylko raz wyrzuca infomacje o naciœniêciu
 			returnM = SHORT;
 			
-		}else {
+		}
+		else 
+		{
 			countSwitch_opk[NrSW]++;
-			returnM = IDLE;}
+			returnM = IDLE;
+		}
 
 	}
 	else
@@ -145,8 +151,8 @@ przy czym wartosc SHORT jest zwracana co czas przejscia wartosci Rep
 Nale¿y ustaliæ wartoœc makra tabSize_opk na tak¹ ile jest obs³ugiwanych przycisków
 funkcjê wywo³ujemy w przerwaniu i pobieramy jej wartosc przyrownujac do zmiennej globalnej
 */
-int obslugaPrzyciskuKrotkiego3(int NrSW, int SW, int Pozition, int Rep, int Rep2){
-	int returnM=0;
+uint8_t obslugaPrzyciskuKrotkiego3(int NrSW, int SW, int Pozition, int Rep, int Rep2){
+	uint8_t returnM=0;
 	static long int countSwitch_opk[tabSize_opk];
 	static long int countSwitch2_opk[tabSize_opk];
 	if (!(SW & Pozition))
@@ -154,17 +160,22 @@ int obslugaPrzyciskuKrotkiego3(int NrSW, int SW, int Pozition, int Rep, int Rep2
 		//if (countSwitch_opk[NrSW]<(Rep+2)){countSwitch_opk[NrSW]++;}
 		if(countSwitch_opk[NrSW]>Rep)
 		{
-			if (countSwitch2_opk[NrSW]>Rep2){
+			if (countSwitch2_opk[NrSW]>Rep2)
+			{
 				countSwitch2_opk[NrSW]=0;
 				returnM = SHORT;
-				}else {
+			}
+			else 
+			{
 				countSwitch2_opk[NrSW]++;
-			returnM = IDLE;}
+				returnM = IDLE;
+			}
 			
-			}else {
+		}
+		else 
+		{
 			countSwitch_opk[NrSW]++;
 		}
-
 	}
 	else
 	{
@@ -197,39 +208,56 @@ funkcjê wywo³ujemy w przerwaniu i pobieramy jej wartosc przyrownujac do zmiennej
 */
 
 
-int obslugaPrzyciskuKrotkiego4(int NrSW, int SW, int Pozition, int Rep, int Rep2){
-	int returnM=0;
+uint8_t obslugaPrzyciskuKrotkiego4(int NrSW, int SW, int Pozition, int Rep, int Rep2){
+	uint8_t returnM=0;
 	static long int countSwitch_opk[tabSize_opk];
 	static long int countSwitch2_opk[tabSize_opk];
 	if (!(SW & Pozition))
 	{
 		//if (countSwitch_opk[NrSW]<(Rep+2)){countSwitch_opk[NrSW]++;}
-		if (countSwitch_opk[NrSW]>(Rep+Rep2*17)){countSwitch_opk[NrSW]=Rep+Rep2*16;} //-zabezpieczenie przed przekroczeniem zakresu long int w przypadku dlugiego naciskania przycisku
-		if (countSwitch_opk[NrSW]>(Rep+Rep2*15)){
-			if (countSwitch2_opk[NrSW]>Rep2){
+		if (countSwitch_opk[NrSW]>(Rep+Rep2*17))
+		{
+			countSwitch_opk[NrSW]=Rep+Rep2*16;
+		} //-zabezpieczenie przed przekroczeniem zakresu long int w przypadku dlugiego naciskania przycisku
+		if (countSwitch_opk[NrSW]>(Rep+Rep2*15))
+		{
+			if (countSwitch2_opk[NrSW]>Rep2)
+			{
 				countSwitch2_opk[NrSW]=0;
 				returnM = SHORT2;
-				}else {
+			}
+			else 
+			{
 				countSwitch2_opk[NrSW]++;
-			returnM = IDLE;}
+				returnM = IDLE;
+			}
 		}	
-		else if (countSwitch_opk[NrSW]>(Rep+Rep2*10)){
-			if (countSwitch2_opk[NrSW]>Rep2){
+		else if (countSwitch_opk[NrSW]>(Rep+Rep2*10))
+		{
+			if (countSwitch2_opk[NrSW]>Rep2)
+			{
 				countSwitch2_opk[NrSW]=0;
 				returnM = SHORT1;
-				}else {
+			}
+			else 
+			{
 				countSwitch2_opk[NrSW]++;
-			returnM = IDLE;}
+				returnM = IDLE;
+			}
 		}
 		else if(countSwitch_opk[NrSW]>Rep)
 		{
-			if (countSwitch2_opk[NrSW]>Rep2){
+			if (countSwitch2_opk[NrSW]>Rep2)
+			{
 				countSwitch2_opk[NrSW]=0;
 				returnM = SHORT;
-				}else {
+			}
+			else 
+			{
 				countSwitch2_opk[NrSW]++;
-			returnM = IDLE;}
-			}//else {
+				returnM = IDLE;
+			}
+		}//else {
 			countSwitch_opk[NrSW]++;
 		//}
 

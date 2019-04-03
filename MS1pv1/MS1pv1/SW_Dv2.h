@@ -14,7 +14,7 @@
 #define repeatSW 3
 
 #define tabSize 2
-#define tabSize_opk 13
+#define tabSize_opk 14
 #define tabSize_sen 2
 
 #define TEMP 0
@@ -42,11 +42,11 @@
 
 
 //-------------------------funkcje obs³ugi przycisków-------------------------------------------------------
-int obslugaPrzycisku(/*int size*/int NrSW, int SW, int Pozition);
-int obslugaPrzyciskuKrotkiego( int NrSW, int SW, int Pozition, int Rep);
-int obslugaPrzyciskuKrotkiego2( int NrSW, int SW, int Pozition, int Rep);
-int obslugaPrzyciskuKrotkiego3(int NrSW, int SW, int Pozition, int Rep, int Rep2);
-int obslugaPrzyciskuKrotkiego4(int NrSW, int SW, int Pozition, int Rep, int Rep2);
+uint8_t obslugaPrzycisku(/*int size*/int NrSW, int SW, int Pozition);
+uint8_t obslugaPrzyciskuKrotkiego( int NrSW, int SW, int Pozition, int Rep);
+uint8_t obslugaPrzyciskuKrotkiego2( int NrSW, int SW, int Pozition, int Rep);
+uint8_t obslugaPrzyciskuKrotkiego3(int NrSW, int SW, int Pozition, int Rep, int Rep2);
+uint8_t obslugaPrzyciskuKrotkiego4(int NrSW, int SW, int Pozition, int Rep, int Rep2);
 
 //-------------------------funkcje obs³ugi czujnika indukcyjnego-------------------------------------------------------
 int obslugaCzujnikaInd(int NrSW, int SW, int Pozition, int Rep);

@@ -3,9 +3,8 @@
 
 /*
 do zrobienia:
-globalny timer do obslugi wszystkich pozostalych timerow dodac w przerwaniu od timera
-przeniesc gdzieœ funkcje do odliczania kalibracji temperatury
-
+nie dzia³a brzeczyk w menu ukrytym
+nie ddzia³¹ wejscie w mwnu ukryte - dziala co drugie nacisniecie on off
 */
 
 /*----- macro definition --------- */
@@ -19,8 +18,8 @@ przeniesc gdzieœ funkcje do odliczania kalibracji temperatury
 #define RS_PANEL_PRES	(uint8_t)0x01u		/* !< value send by RS485 to indicate panel presence >!*/
 #define RS_CTRL_ON		(uint8_t)0x02u		/* !< value send by RS485 to switch on controller >!*/
 #define RS_CTRL_OFF		(uint8_t)0x03u		/* !< value send by RS485 to switch off controller >!*/
-#define RS_LAMP_ON		(uint8_t)0x06u		/* !< value send by RS485 to switch on lamp >!*/
-#define RS_LAMP_OFF		(uint8_t)0x07u		/* !< value send by RS485 to switch off lamp >!*/
+#define RS_LAMP_OFF		(uint8_t)0x06u		/* !< value send by RS485 to switch on lamp >!*/
+#define RS_LAMP_ON		(uint8_t)0x07u		/* !< value send by RS485 to switch off lamp >!*/
 #define RS_FUR_ON		(uint8_t)0x09u		/* !< value send by RS485 to switch on furnace >!*/
 #define RS_FUR_OFF		(uint8_t)0x0Au		/* !< value send by RS485 to switch off furnace >!*/
 #define RS_FAN_ON		(uint8_t)0x0Bu		/* !< value send by RS485 to switch on fan >!*/

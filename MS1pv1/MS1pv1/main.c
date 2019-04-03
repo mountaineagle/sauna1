@@ -22,6 +22,8 @@
 
 /*-----------global variable definition -------------*/
 
+volatile uint8_t debugCounter=0;
+
 static uint8_t eepromInitDefaultFlag_u8 EEMEM;					/* flag indicate set default value in EEPROM memory during first start of the system */
 static strSaunaSavedParameter_t structEepromSavedValue EEMEM;   /* EEPROM struct with main settings for sauna */
 
@@ -1249,7 +1251,7 @@ static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWor
 		{	
 			/* switching on the lamp */
 			Gv_LampState_e = LAMP_AUTO_ON;
-			/* switching on the furnance on entry */
+			/* switching on the furnace on entry */
 			Gv_FurState_e = FUR_ON;
 		}
 		/* reset min timer */
@@ -1755,6 +1757,7 @@ static void TimerSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorki
 	{
 		Gv_StateMachine_e = Gv_StateMachinePrevState_e;
 		Gv_InitOnEntry_bo = TRUE;
+		Gv_StateMachinePrevState_e = SM_TIMER_SET;
 	}
 	else if (SW_TIMER == event_u8)
 	{
@@ -1986,52 +1989,75 @@ static void SwEventChoose (volatile uint8_t *switchCounter_bo, uint8_t *swEvent_
 	if (TRUE == *switchCounter_bo)
 	{
 		*switchCounter_bo = FALSE;
-		Gv_BuzCounter_u16 = 50u;
-	    if ( SHORT == obslugaPrzyciskuKrotkiego2(0u,PINA,0x01u,15u) )// ON/OFF
+		
+	    if (   (SHORT == obslugaPrzyciskuKrotkiego2(0u,PINA,0x01u,15u)) 
+		    && (IDLE == obslugaPrzyciskuKrotkiego(12u,PINA,0x10u,1u)))// ON/OFF
 		{
-			*swEvent_u8 = SW_OFF_ON; 
+			*swEvent_u8 = SW_OFF_ON;
+			Gv_BuzCounter_u16 = 50u; 
 		}
-	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(1u,PINA,0x02u,15u) )// LAMP<-TEMP
+	    else if ( (SHORT == obslugaPrzyciskuKrotkiego2(1u,PINA,0x02u,15u))) // LAMP
 		{
 			*swEvent_u8 = SW_LAMP; 
+			Gv_BuzCounter_u16 = 50u;
 		}
-	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(2u,PINA,0x04u,15u) )// STRZ GORA
+	    else if (  (SHORT == obslugaPrzyciskuKrotkiego2(2u,PINA,0x04u,15u)) 
+				&& (SM_OFF != Gv_StateMachine_e)
+				&& (SM_ERROR != Gv_StateMachine_e)) // UP
 		{
-			*swEvent_u8 = SW_UP; 
+			*swEvent_u8 = SW_UP;
+			Gv_BuzCounter_u16 = 50u; 
 		}
-	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(3u,PINA,0x08u,15u) )// WIATRAK<-TIMER
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(3u,PINA,0x08u,15u) ) // FAN
 		{
 			*swEvent_u8 = SW_FAN;
+			Gv_BuzCounter_u16 = 50u;
 		}
-	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(4u,PINA,0x10u,15u) )// MENU<-LAMP2
+	    else if (  (SHORT == obslugaPrzyciskuKrotkiego2(4u,PINA,0x10u,15u)) 
+				&& (SM_OFF != Gv_StateMachine_e) 
+				&& (SM_ERROR != Gv_StateMachine_e) ) // MENU/TIMER
 		{
 			*swEvent_u8 = SW_TIMER;
+			Gv_BuzCounter_u16 = 50u;
 		}
-	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(5u,PINA,0x20u,15u) )// STRZ DOL
+	    else if (  (SHORT == obslugaPrzyciskuKrotkiego2(5u,PINA,0x20u,15u)) 
+				&& (SM_OFF != Gv_StateMachine_e) 
+				&& (SM_ERROR != Gv_StateMachine_e) ) // DOWN
 		{
 			*swEvent_u8 = SW_DOWN; 
+			Gv_BuzCounter_u16 = 50u;
 		}
-	    else if ( SHORT == obslugaPrzyciskuKrotkiego(6u,PINA,0x10u,1500u) )// MENU UKRYTE
+	    else if (  (SHORT == obslugaPrzyciskuKrotkiego(6u,PINA,0x10u,1500u)) //MENU
+				&& (SHORT == obslugaPrzyciskuKrotkiego(11u,PINA,0x01u,1500u)) //ON-OFF
+				&& (SM_OFF == Gv_StateMachine_e)) // HIDDEN MENU
 		{
 			*swEvent_u8 = SW_MENU;
 			Gv_BuzCounter_u16 = 100u;
 		}
-	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(7u,PINA,0x04u,150u,100u) )// very fast UP
+	    if (   (SHORT2 == obslugaPrzyciskuKrotkiego4(7u,PINA,0x04u,150u,100u)) 
+			&& (SM_OFF != Gv_StateMachine_e)
+			&& (SM_ERROR != Gv_StateMachine_e))// very fast UP
 		{
 			*swEvent_u8 = SW_VERY_FAST_UP;
 			Gv_BuzCounter_u16 = 20u;
 		}
-	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(8u,PINA,0x04u,150u,100u) )// fast UP
+	    if (   (SHORT1 == obslugaPrzyciskuKrotkiego4(8u,PINA,0x04u,150u,100u)) 
+			&& (SM_OFF != Gv_StateMachine_e)
+			&& (SM_ERROR != Gv_StateMachine_e)) // fast UP
 	    {
 		    *swEvent_u8 = SW_FAST_UP;
 			Gv_BuzCounter_u16 = 20u;
 	    }
-	    if ( SHORT2 == obslugaPrzyciskuKrotkiego4(9u,PINA,0x20u,150u,100u) )// very fast DOWN
+	    if (   (SHORT2 == obslugaPrzyciskuKrotkiego4(9u,PINA,0x20u,150u,100u)) 
+			&& (SM_OFF != Gv_StateMachine_e)
+			&& (SM_ERROR != Gv_StateMachine_e)) // very fast DOWN
 		{
 			*swEvent_u8 = SW_VERY_FAST_DOWN;
 			Gv_BuzCounter_u16 = 20u;
 		}
-	    if ( SHORT1 == obslugaPrzyciskuKrotkiego4(10u,PINA,0x20u,150u,100u) )// fast DOWN
+	    if (   (SHORT1 == obslugaPrzyciskuKrotkiego4(10u,PINA,0x20u,150u,100u)) 
+			&& (SM_OFF != Gv_StateMachine_e)
+			&& (SM_ERROR != Gv_StateMachine_e)) // fast DOWN
 	    {
 		    *swEvent_u8 = SW_FAST_DOWN;
 			Gv_BuzCounter_u16 = 20u;
@@ -2487,7 +2513,7 @@ static void fillLcdDataTab(uint8_t conversionLevel_u8, int16_t valueToConvert_u1
 				TimeConv((uint16_t)valueToConvert_u16,digData_a);
 				TimeConvToDsp(digData_a,displayOutData_pa);
 			break;	
-			case 3:
+			case 3:/* error info */
 				displayOutData_pa[3] = SPCJ;
 				displayOutData_pa[2] = SPCJ;
 				displayOutData_pa[0] = LE;
@@ -3093,9 +3119,10 @@ static void OutputExecute(strSaunaParam_t *structWorkingValue, processedDataInRS
 	FurnanceStateMachine(structWorkingValue, processedRSData);
 	SendDisplayPresence(); 
 	TimerMinReset();
+	//fillLcdDataTab(2, (int16_t) debugCounter, tabOutDsp_au8);
 	DsLedSend(tabOutDsp_au8[0], tabOutDsp_au8[1], tabOutDsp_au8[2], tabOutDsp_au8[3]);
 	LedWorkStatus();
-	//BuzzerWork(Gv_BuzCounter_u16, 1u);
+	BuzzerWork(Gv_BuzCounter_u16, 1u);
 	SendDataByRs();
 	return;
 }
@@ -3115,6 +3142,8 @@ static void OutputExecute(strSaunaParam_t *structWorkingValue, processedDataInRS
 *    Function used to send array with data by RS485 depend on additional line, function also check reply after sending data, and in case of error send data again.
 *
 *---------------------------------------------------------------------------*/
+
+				
 static void SendDataByRs()
 {
 /*--------old concept for sending data by RS 485- do not change------------------*/
@@ -3159,6 +3188,8 @@ static void SendDataByRs()
 		{ 
 			if (Gv_SendStepLevel_u8==0 )
 			{
+				debugCounter++;
+				if(debugCounter==255){debugCounter=0;}
 				PORTD |= (1<<PD2); /* set pin for 1 which tell us about sending data by Master device */
 				/*_delay_us(5);*/
 				USART_SendByteM(Gv_TabSendDataRS485_au8[9]);
@@ -3323,7 +3354,7 @@ static void InitDataOnEntry(strSaunaParam_t *structWorkingValue)
 	sei();	
 	
 	/* set watch dog */
-	wdt_enable(WDTO_2S);
+	//wdt_enable(WDTO_2S);
 	
 	_delay_ms(300);
 		
