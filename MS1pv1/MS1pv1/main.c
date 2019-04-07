@@ -103,11 +103,12 @@ static void saveDefaultParameterToEeprom(strSaunaSavedParameter_t *structEepromP
         (uint8_t)TEMPERATURE_HOTMIN_DEF,
         (uint8_t)TIMER_FAN_DEF,
         (uint8_t)HIST_TEMP_DEF,
-        (int8_t)CALIBRATION_DEF
+        (int8_t)CALIBRATION_DEF,
+		(uint8_t)TEMPERATURE_HOT_DEF
     };
-	
+
 	eeprom_write_block(&structDefParameter,structEepromParam,sizeof(structDefParameter));
-	
+
 	return;
 }
 
@@ -178,7 +179,9 @@ static void fillWorkingStructDuringStart(strSaunaParam_t *structWorkingValue, st
 *---------------------------------------------------------------------------*/
 static void SaveToEEPROM(strSaunaParam_t* savedValue)
 {
+	cli(); /* turn off interrupt before eeprom write */
 	eeprom_write_block(&(savedValue->HiddenMenuParam),&structEepromSavedValue,sizeof(structEepromSavedValue));
+	sei(); /* turn on interrupt after eeprom write */
 	return;
 }
 
@@ -198,10 +201,10 @@ static void SaveToEEPROM(strSaunaParam_t* savedValue)
 *---------------------------------------------------------------------------*/
 static void fillWorkingStructDuringSwitchingOn(strSaunaParam_t *structWorkingValue)
 {
-	structWorkingValue->TemperatureHot_u8 = TEMPERATURE_HOT_DEF;
 	structWorkingValue->DelayWarmingTime_s16 = DELAY_WARMING_TIME_DEF;
-	structWorkingValue->WarmingTime_s16 = structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16;
+	structWorkingValue->WarmingTime_s16 = structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16;
 	structWorkingValue->TimerCurrentFanSet_u8 = structWorkingValue->HiddenMenuParam.TimerFanSet_u8;
+	structWorkingValue->TemperatureHot_u8 = structWorkingValue->HiddenMenuParam.TemperatureHot_u8;
 	
 	return;
 }
@@ -258,11 +261,15 @@ static void BackToOffState(uint8_t event_u8,strSaunaParam_t *structWorkingValue,
 static void setHistTempFunction(uint8_t event_u8,strSaunaParam_t *structWorkingValue_pstr, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
 {
 		
-		if(SW_UP == event_u8)
+		if(	   SW_UP == event_u8
+		|| SW_FAST_UP == event_u8
+		|| SW_VERY_FAST_UP == event_u8)
 		{
 			(structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8)++;
 		}
-		if(SW_DOWN == event_u8)
+		if(	   SW_DOWN == event_u8
+		|| SW_FAST_DOWN == event_u8
+		|| SW_VERY_FAST_DOWN == event_u8)
 		{
 			(structWorkingValue_pstr->HiddenMenuParam.HistTemp_u8)--;
 		}
@@ -300,21 +307,25 @@ static void setHistTempFunction(uint8_t event_u8,strSaunaParam_t *structWorkingV
 static void setCalibrationFunction(uint8_t event_u8, strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa, uint8_t menuLevel_u8) 
 {
 		
-		if(SW_UP == event_u8)
+		if(	   SW_UP == event_u8 
+			|| SW_FAST_UP == event_u8
+			|| SW_VERY_FAST_UP == event_u8)
 		{
 			(structWorkingValue->HiddenMenuParam.Calibration_s8)++;
 		}
-		if(SW_DOWN == event_u8)
+		if(	   SW_DOWN == event_u8
+			|| SW_FAST_DOWN == event_u8
+		    || SW_VERY_FAST_DOWN == event_u8)
 		{
 			(structWorkingValue->HiddenMenuParam.Calibration_s8)--;
 		}
-		if((structWorkingValue->HiddenMenuParam.Calibration_s8) > CALIBRATION_MAX)
+		if((structWorkingValue->HiddenMenuParam.Calibration_s8) > (int8_t)CALIBRATION_MAX)
 		{
-			structWorkingValue->HiddenMenuParam.Calibration_s8 = CALIBRATION_MIN;
+			structWorkingValue->HiddenMenuParam.Calibration_s8 = (int8_t)CALIBRATION_MIN;
 		}
-		if((structWorkingValue->HiddenMenuParam.Calibration_s8) < CALIBRATION_MIN)
+		if((structWorkingValue->HiddenMenuParam.Calibration_s8) < (int8_t)CALIBRATION_MIN)
 		{
-			structWorkingValue->HiddenMenuParam.Calibration_s8 = CALIBRATION_MAX;
+			structWorkingValue->HiddenMenuParam.Calibration_s8 = (int8_t)CALIBRATION_MAX;
 		}
 		
 		fillLcdDataTab(CALIB_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.Calibration_s8, displayOutData_pa);
@@ -343,38 +354,38 @@ static void setMaxWorkingTimerFunction(uint8_t event_u8, strSaunaParam_t *struct
 {
 		if(SW_UP == event_u8)
 		{
-			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)++;
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16)++;
 		}
 		if(SW_DOWN == event_u8)
 		{
-			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)--;
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16)--;
 		}
 		if(SW_FAST_UP == event_u8)
 		{
-			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) += SW_FAST_CHANGE_10;
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16) += (int16_t)SW_FAST_CHANGE_10;
 		}
 		if(SW_FAST_DOWN == event_u8)
 		{
-			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) -= SW_FAST_CHANGE_10;
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16) -= (int16_t)SW_FAST_CHANGE_10;
 		}
 		if(SW_VERY_FAST_UP == event_u8)
 		{
-			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) += SW_FAST_CHANGE_60;
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16) += (int16_t)SW_FAST_CHANGE_60;
 		}
 		if(SW_VERY_FAST_DOWN == event_u8)
 		{
-			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) -= SW_FAST_CHANGE_60;
+			(structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16) -= (int16_t)SW_FAST_CHANGE_60;
 		}
-		if((structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) > WARMING_TIME_MAX_MAX)
+		if((structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16) > (int16_t)WARMING_TIME_MAX_MAX)
 		{
-			structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16 = WARMING_TIME_MAX_MIN;
+			structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16 = (int16_t)WARMING_TIME_MAX_MIN;
 		}
-		if((structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16) < WARMING_TIME_MAX_MIN)
+		if((structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16) < (int16_t)WARMING_TIME_MAX_MIN)
 		{
-			structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16 = WARMING_TIME_MAX_MAX;
+			structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16 = (int16_t)WARMING_TIME_MAX_MAX;
 		}	
 		
-		fillLcdDataTab(TIME_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16, displayOutData_pa);
+		fillLcdDataTab(TIME_LCD_CONV_LEVEL,(int16_t)structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16, displayOutData_pa);
 		
 		return;
 }
@@ -631,29 +642,30 @@ static void setFurnanceWorkTime(uint8_t event_u8, strSaunaParam_t *structWorking
 		}
 		else if(SW_FAST_UP == event_u8)
 		{
-			(structWorkingValue->WarmingTime_s16) += SW_FAST_CHANGE_10;
+			(structWorkingValue->WarmingTime_s16) += (int16_t)SW_FAST_CHANGE_10;
 		}
 		else if(SW_FAST_DOWN == event_u8)
 		{
-			(structWorkingValue->WarmingTime_s16) -= SW_FAST_CHANGE_10;
+			(structWorkingValue->WarmingTime_s16) -= (int16_t)SW_FAST_CHANGE_10;
 		}
 		else if(SW_VERY_FAST_UP == event_u8)
 		{
-			(structWorkingValue->WarmingTime_s16) += SW_FAST_CHANGE_60;
+			(structWorkingValue->WarmingTime_s16) += (int16_t)SW_FAST_CHANGE_60;
 		}
 		else if(SW_VERY_FAST_DOWN == event_u8 )
 		{
-			(structWorkingValue->WarmingTime_s16) -= SW_FAST_CHANGE_60;
+			(structWorkingValue->WarmingTime_s16) -= (int16_t)SW_FAST_CHANGE_60;
 		}
 		
-		if(structWorkingValue->WarmingTime_s16 > structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16)
+		if(structWorkingValue->WarmingTime_s16 > (int16_t)(structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16))
 		{
-			structWorkingValue->WarmingTime_s16 = WARMING_TIME_MAX_MIN;
+			structWorkingValue->WarmingTime_s16 = (int16_t)WARMING_TIME_MAX_MIN;
 		}
 		/* (SW_IDLE != event_u8) - add also protection by set max time in case of check status of time in heat state */
-		if((structWorkingValue->WarmingTime_s16 < WARMING_TIME_MAX_MIN) && (SW_IDLE != event_u8) ) 
+		else if((structWorkingValue->WarmingTime_s16 < (int16_t)WARMING_TIME_MAX_MIN) && (SW_IDLE != event_u8) ) 
 		{
-			structWorkingValue->WarmingTime_s16 = structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16;
+			structWorkingValue->WarmingTime_s16 = (structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16);
+			
 		}	
 		
 		fillLcdDataTab(TIME_LCD_CONV_LEVEL,(int16_t)structWorkingValue->WarmingTime_s16, displayOutData_pa);
@@ -699,27 +711,27 @@ static void setFurnanceDelay(uint8_t event_u8, strSaunaParam_t *structWorkingVal
 		}
 		else if((SW_UP == event_u8) && (TIME_DELAY_10H <= structWorkingValue->DelayWarmingTime_s16) )
 		{
-			(structWorkingValue->DelayWarmingTime_s16) += SW_FAST_CHANGE_10;
+			(structWorkingValue->DelayWarmingTime_s16) += (int16_t)SW_FAST_CHANGE_10;
 		}
 		else if((SW_DOWN == event_u8) && (TIME_DELAY_10H < structWorkingValue->DelayWarmingTime_s16))
 		{
-			(structWorkingValue->DelayWarmingTime_s16)-=SW_FAST_CHANGE_10;
+			(structWorkingValue->DelayWarmingTime_s16) -= (int16_t)SW_FAST_CHANGE_10;
 		}
 		else if(SW_FAST_UP == event_u8)
 		{
-			(structWorkingValue->DelayWarmingTime_s16)+=SW_FAST_CHANGE_10;
+			(structWorkingValue->DelayWarmingTime_s16) += (int16_t)SW_FAST_CHANGE_10;
 		}
 		else if(SW_FAST_DOWN == event_u8)
 		{
-			(structWorkingValue->DelayWarmingTime_s16)-=SW_FAST_CHANGE_10;
+			(structWorkingValue->DelayWarmingTime_s16) -= (int16_t)SW_FAST_CHANGE_10;
 		}
 		else if(SW_VERY_FAST_UP == event_u8)
 		{
-			(structWorkingValue->DelayWarmingTime_s16) += SW_FAST_CHANGE_60;
+			(structWorkingValue->DelayWarmingTime_s16) += (int16_t)SW_FAST_CHANGE_60;
 		}
 		else if(SW_VERY_FAST_DOWN == event_u8)
 		{
-			(structWorkingValue->DelayWarmingTime_s16) -= SW_FAST_CHANGE_60;
+			(structWorkingValue->DelayWarmingTime_s16) -= (int16_t)SW_FAST_CHANGE_60;
 		}
 		
 		if(structWorkingValue->DelayWarmingTime_s16 > DELAY_WARMING_TIME_MAX)
@@ -758,6 +770,7 @@ static void TempSetStateExecute(uint8_t event_u8, strSaunaParam_t *structWorking
 	if (TRUE == Gv_InitOnEntry_bo)
 	{	
 		ClearAllTimers();
+		Gv_LedStatus.TempLed_u8 = LED_BLINK;
 		
 		/* clear initOnEntry flag - initialize was done */
 		Gv_InitOnEntry_bo = FALSE;
@@ -814,6 +827,10 @@ static void TempSetStateExecute(uint8_t event_u8, strSaunaParam_t *structWorking
 		/* remember value in case of return from other states */
 		Gv_StateMachinePrevState_e = SM_TEMP_SET;
 		
+		structWorkingValue->HiddenMenuParam.TemperatureHot_u8 = structWorkingValue->TemperatureHot_u8;
+		DsLedOff();
+		SaveToEEPROM(structWorkingValue);
+		
 		//Gv_InitOnEntry_bo = TRUE;
 	}
 		
@@ -841,7 +858,7 @@ static void TempSetStateExecute(uint8_t event_u8, strSaunaParam_t *structWorking
 *---------------------------------------------------------------------------*/
 static void OffStateExecute(uint8_t event_u8, strSaunaParam_t *structWorkingValue, uint8_t *displayOutData_pa)
 {
-	/*used to count position of sec mark on disply */
+	/*used to count position of sec mark on display */
 	static uint8_t tickDislplayMark_u8 = 0u; 
 		/* initialize variable and set states on entry to this state */
 	if (TRUE == Gv_InitOnEntry_bo)
@@ -853,6 +870,8 @@ static void OffStateExecute(uint8_t event_u8, strSaunaParam_t *structWorkingValu
 		Gv_LedStatus.TempLed_u8 = LED_OFF;
 		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
 		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+		Gv_LedStatus.ProgLed_u8 = LED_OFF;
+		Gv_LedStatus.FanLed_u8= LED_OFF;
 		
 		Gv_FanState_e = FAN_OFF;
 		Gv_LampState_e = LAMP_OFF;
@@ -1032,6 +1051,7 @@ static void InStateExecute(uint8_t event_u8, strSaunaParam_t *structWorkingValue
 		/* Clear internal timers */
 		ClearAllTimers();
 		tickDislplayMark_u8 = 0u;
+		Gv_LedStatus.TempLed_u8 = LED_OFF;
 		Gv_StateMachinePrevState_e = SM_IN;
 	}
 
@@ -1197,14 +1217,18 @@ static void HideMenuStateExecute(uint8_t event_u8, strSaunaParam_t *structWorkin
 		currentMenuState_u8 = 0u;
 		event_u8 = SW_TIMER;
 		
+		
+		Gv_FanState_e = FAN_OFF;
+		Gv_LampState_e = LAMP_OFF;
+		Gv_FurState_e = FUR_OFF;
+		
 		/*clear led after return from delay state*/
 		Gv_LedStatus.TempLed_u8 = LED_OFF;
 		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
 		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
+		Gv_LedStatus.ProgLed_u8 = LED_BLINK;
 
-		Gv_FanState_e = FAN_OFF;
-		Gv_LampState_e = LAMP_OFF;
-		Gv_FurState_e = FUR_OFF;
+
 		/* clear initOnEntry flag - initialize was done*/
 		Gv_InitOnEntry_bo = FALSE;
 	}
@@ -1213,8 +1237,11 @@ static void HideMenuStateExecute(uint8_t event_u8, strSaunaParam_t *structWorkin
 	{
 		Gv_StateMachine_e = SM_OFF;
 		Gv_InitOnEntry_bo = TRUE;
+		DsLedOff();
+		SaveToEEPROM(structWorkingValue);
 	}
 	
+	Gv_LedStatus.ProgLed_u8 = LED_BLINK;
 	ChangeMenu(event_u8, &currentMenuState_u8, tabHideMenu, structWorkingValue, displayOutData_pa);
 	
 	return;
@@ -1244,7 +1271,7 @@ static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWor
 	if (TRUE == Gv_InitOnEntry_bo)
 	{		
 		/* clear led after return from delay state */
-		Gv_LedStatus.TempLed_u8 = LED_OFF;
+		Gv_LedStatus.TempLed_u8 = LED_ON;
 		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
 		Gv_LedStatus.TimerOffLed_u8 = LED_ON;
 		if (SM_TIMER_SET != Gv_StateMachinePrevState_e)
@@ -1256,6 +1283,8 @@ static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWor
 		}
 		/* reset min timer */
 		Gv_StatusTimerReset_bo = TRUE;
+		
+		Gv_BuzCounter_u16 = 50u;
 		
 		/* Clear internal timers */
 		ClearAllTimers();
@@ -1270,6 +1299,7 @@ static void FurnanceOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWor
 	{
 		/* Clear internal timers */
 		ClearAllTimers();
+		Gv_LedStatus.TempLed_u8 = LED_ON;
 		Gv_StateMachinePrevState_e = SM_FURNANCE_ON;
 	}
 
@@ -1611,6 +1641,8 @@ static void FurnanceDelayStateExecute(uint8_t event_u8, strSaunaParam_t * struct
 		Gv_LedStatus.TimerOnLed_u8 = LED_ON;
 		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
 		
+		Gv_BuzCounter_u16 = 50u;
+		
 		/* reset min timer */
 		Gv_StatusTimerReset_bo = TRUE;
 		
@@ -1734,7 +1766,7 @@ static void TimerSetStateExecute(uint8_t event_u8, strSaunaParam_t * structWorki
 	if (TRUE == Gv_InitOnEntry_bo)
 	{
 		/* clear led after return from delay state */
-		Gv_LedStatus.TempLed_u8 = LED_ON;
+		Gv_LedStatus.TempLed_u8 = LED_BLINK;
 		Gv_LedStatus.TimerOnLed_u8 = LED_OFF;
 		Gv_LedStatus.TimerOffLed_u8 = LED_OFF;
 		
@@ -1820,6 +1852,8 @@ static void FanOnStateExecute(uint8_t event_u8, strSaunaParam_t * structWorkingV
 		
 		/* switch on the fan */
 		Gv_FanState_e = FAN_AUTO_ON;
+		
+		Gv_BuzCounter_u16 = 50u;
 		
 		/* reset min timer */
 		Gv_StatusTimerReset_bo = TRUE;
@@ -1946,6 +1980,8 @@ static void ErrorStateExecute(uint8_t event_u8, processedDataInRS_t *processedRS
 	/* switch executing */
 	if (SW_OFF_ON == event_u8)
 	{
+		processedRSInData->dataInRS.Error1Sen_bo = FALSE;
+		processedRSInData->dataInRS.Error2Sen_bo = FALSE;
 		Gv_StateMachine_e = SM_OFF;
 		Gv_InitOnEntry_bo = TRUE;
 	}
@@ -1990,13 +2026,18 @@ static void SwEventChoose (volatile uint8_t *switchCounter_bo, uint8_t *swEvent_
 	{
 		*switchCounter_bo = FALSE;
 		
-	    if (   (SHORT == obslugaPrzyciskuKrotkiego2(0u,PINA,0x01u,15u)) 
-		    && (IDLE == obslugaPrzyciskuKrotkiego(12u,PINA,0x10u,1u)))// ON/OFF
+	    if (   (IDLE == obslugaPrzyciskuKrotkiego(12u,PINA,0x10u,1u)) 
+			&& (SHORT == obslugaPrzyciskuKrotkiego2(0u,PINA,0x01u,15u))) // ON/OFF
+		    
 		{
 			*swEvent_u8 = SW_OFF_ON;
 			Gv_BuzCounter_u16 = 50u; 
 		}
-	    else if ( (SHORT == obslugaPrzyciskuKrotkiego2(1u,PINA,0x02u,15u))) // LAMP
+	    else if ( (SHORT == obslugaPrzyciskuKrotkiego2(1u,PINA,0x02u,15u))
+				&& (SM_ERROR != Gv_StateMachine_e)
+				&& (SM_HIDE_MENU != Gv_StateMachine_e)
+				&& (SM_TEMP_SET != Gv_StateMachine_e)
+				&& (SM_TIMER_SET != Gv_StateMachine_e)) // LAMP
 		{
 			*swEvent_u8 = SW_LAMP; 
 			Gv_BuzCounter_u16 = 50u;
@@ -2008,14 +2049,19 @@ static void SwEventChoose (volatile uint8_t *switchCounter_bo, uint8_t *swEvent_
 			*swEvent_u8 = SW_UP;
 			Gv_BuzCounter_u16 = 50u; 
 		}
-	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(3u,PINA,0x08u,15u) ) // FAN
+	    else if ( SHORT == obslugaPrzyciskuKrotkiego2(3u,PINA,0x08u,15u) 
+				&& (SM_ERROR != Gv_StateMachine_e)
+				&& (SM_HIDE_MENU != Gv_StateMachine_e)
+				&& (SM_TEMP_SET != Gv_StateMachine_e)
+			    && (SM_TIMER_SET != Gv_StateMachine_e)) // FAN
 		{
 			*swEvent_u8 = SW_FAN;
 			Gv_BuzCounter_u16 = 50u;
 		}
 	    else if (  (SHORT == obslugaPrzyciskuKrotkiego2(4u,PINA,0x10u,15u)) 
 				&& (SM_OFF != Gv_StateMachine_e) 
-				&& (SM_ERROR != Gv_StateMachine_e) ) // MENU/TIMER
+				&& (SM_ERROR != Gv_StateMachine_e) 
+				&& (SM_TEMP_SET != Gv_StateMachine_e)) // MENU/TIMER
 		{
 			*swEvent_u8 = SW_TIMER;
 			Gv_BuzCounter_u16 = 50u;
@@ -2149,27 +2195,27 @@ static void FurnanceStateMachine(strSaunaParam_t *structWorkingValue, processedD
 		case FUR_IDLE: /* IDLE state */
 			; /* do nothing */
 		break;
-		case FUR_ON: /* switch on the furnance for the first time */
+		case FUR_ON: /* switch on the furnace for the first time */
 			RsDataTab(RS_FUR_ON, Gv_TabSendDataRS485_au8);
 			//timerFur_u16 = structWorkingValue->WarmingTime_s16;
 			Gv_LedStatus.TempLed_u8 = LED_ON;
 			Gv_FurState_e = FUR_AUTO_ON_EXEC;
 		break;
-		case FUR_AUTO_ON: /* switch on the furnance for te first time */
+		case FUR_AUTO_ON: /* switch on the furnace for the first time */
 			RsDataTab(RS_FUR_ON, Gv_TabSendDataRS485_au8);
 			Gv_FurState_e = FUR_AUTO_ON_EXEC;
 		break;
-		case FUR_AUTO_ON_EXEC: /* automatic working of the furnance */
+		case FUR_AUTO_ON_EXEC: /* automatic working of the furnace */
 			; /* do nothing */
 		break;
-		case FUR_BREAK: /* switch off the furnance for some period because of reach max temperature */
+		case FUR_BREAK: /* switch off the furnace for some period because of reach max temperature */
 			 RsDataTab(RS_FUR_OFF, Gv_TabSendDataRS485_au8);
 			 Gv_FurState_e = FUR_BREAK_EXEC;
 		break;
-		case FUR_BREAK_EXEC: /* switch off the furnance for some period because of reach max temperature */
+		case FUR_BREAK_EXEC: /* switch off the furnace for some period because of reach max temperature */
 			; /* do nothing */
 		break;
-		case FUR_OFF: /* switching off the furnance */
+		case FUR_OFF: /* switching off the furnace */
 			RsDataTab(RS_FUR_OFF, Gv_TabSendDataRS485_au8);
 			Gv_LedStatus.TempLed_u8 = LED_OFF;
 			Gv_FurState_e = FUR_IDLE;
@@ -2212,7 +2258,7 @@ static void FanStateMachine(strSaunaParam_t *structWorkingValue, processedDataIn
 		case FAN_ON1: /* switching on fan in state off */
 			RsDataTab(RS_FAN_ON, Gv_TabSendDataRS485_au8);
 			Gv_LedStatus.FanLed_u8 = LED_BLINK;
-			timerFan_u16 = structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16;
+			timerFan_u16 = structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16;
 			Gv_FanState_e = FAN_ON1_EXEC;
 		break;
 		case FAN_ON2: /* switching on fan in state differ than off */
@@ -2281,7 +2327,7 @@ static void LampStateMachine(strSaunaParam_t *structWorkingValue, processedDataI
 		case LAMP_ON1: /* switching on in state off */
 			RsDataTab(RS_LAMP_ON, Gv_TabSendDataRS485_au8);
 			Gv_LedStatus.ProgLed_u8 = LED_BLINK;
-			timerLamp_u16 = structWorkingValue->HiddenMenuParam.WarmingTimeMax_u16;
+			timerLamp_u16 = structWorkingValue->HiddenMenuParam.WarmingTimeMax_s16;
 			Gv_LampState_e = LAMP_ON1_EXEC;
 		break;
 		case LAMP_ON1_EXEC:/* executing of working lamp in state off */		
@@ -2559,16 +2605,19 @@ static void ChangeMenu(uint8_t event_u8, uint8_t *currentMenuState_u8, menuItem_
 	const uint8_t switchEvent_u8 = 2u; /* to choose proper position in tab related witch sw event */
 	const uint8_t timeExpired_u8 = 3u; /* to choose proper position in tab related witch time expired */
 	/* choose  menu state by switch and after 3s info go to settings */
-	if ( SW_TIMER == event_u8 )
+	if ( SW_TIMER == event_u8 || SW_MENU == event_u8 )
 	{	
 		*currentMenuState_u8 = tabHideMenu[*currentMenuState_u8].nextState_au8[switchEvent_u8];	
 		Gv_Timer2sHideMenu_u8 = 0u;	
+		DsLedOff();
 		SaveToEEPROM(structure_pstr);
 	}
 	else if ( TIMER_EVENT_2S == Gv_Timer2sHideMenu_u8)		
 	{	
 		*currentMenuState_u8 = tabHideMenu[*currentMenuState_u8].nextState_au8[timeExpired_u8];
 		Gv_Timer2sHideMenu_u8 ++;
+		Gv_BuzCounter_u16 = 50u; 
+		
 	}
 		
 	/* call proper function */

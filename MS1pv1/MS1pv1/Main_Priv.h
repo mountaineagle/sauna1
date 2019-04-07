@@ -30,9 +30,9 @@ nie ddzia³¹ wejscie w mwnu ukryte - dziala co drugie nacisniecie on off
 #define CALIBRATION_MAX (int8_t)10
 #define CALIBRATION_MIN (int8_t)-10
 #define CALIBRATION_DEF (int8_t)0
-#define WARMING_TIME_MAX_MIN 10u
-#define WARMING_TIME_MAX_MAX 360u
-#define WARMING_TIME_MAX_DEF 240u
+#define WARMING_TIME_MAX_MIN 10
+#define WARMING_TIME_MAX_MAX 360
+#define WARMING_TIME_MAX_DEF 240
 #define TEMPERATURE_HOTMAX_MAX 110u
 #define TEMPERATURE_HOTMAX_MIN 50u
 #define TEMPERATURE_HOTMAX_DEF 90u
@@ -49,9 +49,9 @@ nie ddzia³¹ wejscie w mwnu ukryte - dziala co drugie nacisniecie on off
 /*! \brief default values for some of sauna parameters defined after each switch on controller */
 /*#define WARMING_TIME_DEF 240u this should be set for actual value of WARMING_TIME_MAX parameter */ 
 #define TEMPERATURE_HOT_DEF 50u
-#define DELAY_WARMING_TIME_MIN (int16_t)0u
-#define DELAY_WARMING_TIME_MAX (int16_t)1200u
-#define DELAY_WARMING_TIME_DEF (int16_t)0u
+#define DELAY_WARMING_TIME_MIN (int16_t)0
+#define DELAY_WARMING_TIME_MAX (int16_t)1200
+#define DELAY_WARMING_TIME_DEF (int16_t)0
 
 /*! \brief value for time event */
 #define TIMER_EVENT_1S		20u		/* !< indicate 1s period >!*/
@@ -93,8 +93,8 @@ nie ddzia³¹ wejscie w mwnu ukryte - dziala co drugie nacisniecie on off
 #define SW_TIMER			(uint8_t)10u	/* !< indicate that Time switch was press >!*/
 #define SW_MENU				(uint8_t)11u	/* !< indicate that Time switch was press for long time and enter in hiddenMenu state >!*/
 
-#define SW_FAST_CHANGE_10			10u		/* !< indicate value change by switch execute >!*/
-#define SW_FAST_CHANGE_60			60u		/* !< indicate value change by switch execute >!*/
+#define SW_FAST_CHANGE_10			10		/* !< indicate value change by switch execute >!*/
+#define SW_FAST_CHANGE_60			60		/* !< indicate value change by switch execute >!*/
 /*-------------------------------*/
 
 #define DISPLSY_SEGMENT_NR		(uint8_t)3u  /* used to calculate actual segment nr */
@@ -133,12 +133,13 @@ typedef struct {
 /*! \Structure to save sauna parameter which are written to EEPROM memory */
 typedef struct {
 	/* parameter saved in EEPROM memory */
-	uint16_t	WarmingTimeMax_u16;
+	int16_t		WarmingTimeMax_s16;
 	uint8_t		TemperatureHotMax_u8;
 	uint8_t		TemperatureHotMin_u8;
 	uint8_t		TimerFanSet_u8;
 	uint8_t		HistTemp_u8;
 	int8_t		Calibration_s8;
+	uint8_t		TemperatureHot_u8;
 }strSaunaSavedParameter_t;
 
 /*! \ Structure to save sauna parameter */

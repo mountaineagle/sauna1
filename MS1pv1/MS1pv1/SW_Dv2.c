@@ -71,7 +71,7 @@ uint8_t obslugaPrzycisku(/*int size, */int NrSW, int SW, int Pozition){
 uint8_t obslugaPrzyciskuKrotkiego(int NrSW, int SW, int Pozition, int Rep){	
 
 //	static int tab_opk[tabSize_opk];
-	static long int countSwitch_opk[tabSize_opk];
+	static int countSwitch_opk[tabSize_opk];
 	uint8_t status_u8 = IDLE;
 	if (!(SW & Pozition))
 	{		
@@ -109,7 +109,7 @@ funkcjê wywo³ujemy w przerwaniu i pobieramy jej wartosc przyrownujac do zmiennej
 */
 uint8_t obslugaPrzyciskuKrotkiego2(int NrSW, int SW, int Pozition, int Rep){
 	uint8_t returnM=0;
-	static long int countSwitch_opk[tabSize_opk];
+	static int countSwitch_opk[tabSize_opk];
 	static int swMark[tabSize_opk];
 	if (!(SW & Pozition))
 	{
@@ -210,8 +210,8 @@ funkcjê wywo³ujemy w przerwaniu i pobieramy jej wartosc przyrownujac do zmiennej
 
 uint8_t obslugaPrzyciskuKrotkiego4(int NrSW, int SW, int Pozition, int Rep, int Rep2){
 	uint8_t returnM=0;
-	static long int countSwitch_opk[tabSize_opk];
-	static long int countSwitch2_opk[tabSize_opk];
+	static int countSwitch_opk[tabSize_opk];
+	static int countSwitch2_opk[tabSize_opk];
 	if (!(SW & Pozition))
 	{
 		//if (countSwitch_opk[NrSW]<(Rep+2)){countSwitch_opk[NrSW]++;}
@@ -280,7 +280,7 @@ NrSw - numer danego przycisku/czujnika(jednoczeœni jego pozycja w tworzonej prze
 SW - port na którym jest dany przycisk/czujnik
 Pozition - pozycja przycisku/czujnika w wektorze portów wejœciowych mikrokontrolera
 Rep - czas tzw. debouncingu
-Funkcja zwraca wartoœæ IDLE (0), gdy nie zosta³ przyciœniêty przycisk, natomiast wartosc SHORT (1) , gdy przyciœniêto przycisk d³u¿ej ni¿ czas debouncingu (Rep) ,
+Funkcja zwraca wartoœæ IDLE (0), gdy nie zosta³ przyciœniêty przycisk, natomiast wartosc SHORT (1) , gdy przyciœniêto prsenzycisk d³u¿ej ni¿ czas debouncingu (Rep) ,
 przy czym wartosc SHORT jest zwracana tylko raz
 Nale¿y ustaliæ wartoœc makra tabSize_opk na tak¹ ile jest obs³ugiwanych przycisków
 funkcjê wywo³ujemy w przerwaniu i pobieramy jej wartosc przyrownujac do zmiennej globalnej
